@@ -47,6 +47,12 @@ Class surveyColumnsInformation
     public $dowloadUrl = null;
 
     /**
+     * @var boolean
+     * return EM code for title (currently only in listData), by default column value
+     */
+    public $ByEmCode = false;
+
+    /**
      * constructor
      * @param integer survey id
      * @param string language
@@ -132,7 +138,7 @@ Class surveyColumnsInformation
             'options'=>array(),
         );
         foreach ($allQuestions as $aQuestion) {
-            $aListData = array_merge_recursive($aListData,self::getQuestionListData($aQuestion['qid'],$aQuestion['language']));
+            $aListData = array_merge_recursive($aListData,$this->questionListData($aQuestion['qid']));
         }
         return $aListData;
     }
@@ -434,15 +440,15 @@ Class surveyColumnsInformation
     }
 
     /**
-     * return array  with DB column name key and EM code for value for one question
+     * return array with DB column name key and EM code for value for one question
      * @param integer $qid
-     * @param string $language
-     * @param boolean @todo allow usage of em code or not
      * @throw Exception if debug
      * @return array|null
      */
-    private static function getQuestionListData($qid,$language,$byEm=false) {
-        $oQuestion = Question::model()->find("qid=:qid AND language=:language",array(":qid"=>$qid,":language"=>$language));
+    public function questionListData($qid) {
+        $byEm = $this->ByEmCode;
+        $language = $this->language;
+        $oQuestion = Question::model()->find("qid=:qid AND language=:language",array(":qid"=>$qid,":language"=>$this->language));
         if(!$oQuestion) {
             if(defined('YII_DEBUG') && YII_DEBUG) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -593,7 +599,31 @@ Class surveyColumnsInformation
                 // Unselectable
                 break;
             case 'R': // Ranking
-                tracevar("Ranking todo");
+                $oQuestionAttribute = \QuestionAttribute::model()->find(
+                    "qid = :qid AND attribute = 'max_subquestions'",
+                    array(':qid' => $oQuestion->qid)
+                );
+                if($oQuestionAttribute) {
+                    $maxAnswers = intval($oQuestionAttribute->value);
+                }
+                if(empty($maxAnswers)) {
+                    $maxAnswers = intval(Answer::model()->count(
+                        "qid=:qid and language=:language",
+                        array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language)
+                    ));
+                }
+                for ($count = 1; $count <= $maxAnswers; $count++) {
+                    $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count;
+                    if($byEm) {
+                        $key = $oQuestion->title."_".$count;
+                    }
+                    $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] ".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7)." (".sprintf(gT("Rank %s"),$count).")";
+                    $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                        'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.sprintf(gT("Rank %s"),$count),
+                        'data-title'=>$oQuestion->title."_".$count,
+                        'title'=>viewHelper::purified($oQuestion->question)."\n".sprintf(gT("Rank %s"),$count),
+                    ));
+                }
                 break;
             case '|': // Upload
                 // Upload todo
@@ -625,11 +655,12 @@ Class surveyColumnsInformation
 
     /**
      * get the filter for this column
-     * @param Question
-     * @param $scale
+     * @param \Question
+     * @param integer $scale
+     * @param boolean striped;
      * return array|null
      */
-    public static function getFilter($oQuestion,$scale=0)
+    public static function getFilter($oQuestion,$scale=0,$strip=true)
     {
         /* @TODO : add other */
         $questionClass= Question::getQuestionClass($oQuestion->type);
@@ -647,8 +678,11 @@ Class surveyColumnsInformation
                     'params' => array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language,":scale"=>$scale)
                 ));
                 if(!empty($answers)) {
-                    return CHtml::listData($answers,'code',function($answers) {
-                        return strip_tags(viewHelper::purified($answers->answer));
+                    return CHtml::listData($answers,'code',function($answers) use ($strip) {
+                        if($strip) {
+                            return strip_tags(viewHelper::purified($answers->answer));
+                        }
+                        return viewHelper::purified($answers->answer);
                     });
                 }
                 if(self::allowOther($oQuestion->type) && $oQuestion->other=="Y"){
@@ -716,7 +750,7 @@ Class surveyColumnsInformation
                 return $data->$name;
                 break;
             default:
-                $aAnswers = self::getFilter($oQuestion,$scale);
+                $aAnswers = self::getFilter($oQuestion,$scale,false);
                 if(isset($aAnswers[$data->$name])) {
                     $answer = $aAnswers[$data->$name];
                     return CHtml::tag("div",array('class'=>'answer-value'),"[".$data->$name."] ".viewHelper::purified($answer));
