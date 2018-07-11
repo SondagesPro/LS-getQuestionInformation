@@ -43,8 +43,13 @@ Class surveyColumnsInformation
     
     /* WIP */
     public $multipleSelect = false;
-    /* WIP */
-    public $dowloadUrl = null;
+    /**
+     * @var array|null
+     * route and params for create url @see https://www.yiiframework.com/doc/api/1.1/CUrlManager#createUrl-detail
+     * @example ['route'=>"plugins/direct",['plugin' => 'myPlugin', 'action'=>'downloadfile']]
+     * params are autocompleted with sid=$sid , srid=$srid, qid=$qid, fileindex=$fileindex
+     */
+    public $downloadUrl = null;
 
     /**
      * @var boolean
@@ -417,8 +422,28 @@ Class surveyColumnsInformation
                 }
                 break;
             case 'upload-files':
-            
-                // @todo
+                $url = $this->downloadUrl;
+                if(!isset($url['route']) || !is_string($url['route']) ) {
+                    $url = null;
+                }
+                if($url && (!isset($url['params']) || !is_array($url['params'])) ) {
+                    $url['params'] = array();
+                }
+                $url = base64_encode(json_encode($url));
+                $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = array_merge($aDefaultColumnInfo,
+                    array(
+                    'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
+                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestion),
+                    'sortable'=>false,
+                    'type'=>'raw',
+                    'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getUploadAnswerValue($data,$this,'.$oQuestion->qid.',"'.$url.'")',
+                ));
+                $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount"] = array_merge($aDefaultColumnInfo,
+                    array(
+                    'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount" ,
+                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") . gT("File count"),
+                ));
+                break;
             case 'boilerplate':
                 /* Don't show it*/
                 break;
@@ -626,6 +651,24 @@ Class surveyColumnsInformation
                 }
                 break;
             case '|': // Upload
+                $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid;
+                if($byEm) {
+                    $key = $oQuestion->title;
+                }
+                $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7);
+                $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                    'data-content'=>viewHelper::purified($oQuestion->question),
+                    'data-title'=>$oQuestion->title,
+                    'title'=>viewHelper::purified($oQuestion->question),
+                ));
+                $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount";
+                $aListData['data'][$key] = "[{$oQuestion->title}_filecount] ".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7);
+                $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                    'data-content'=>gT("File count")."hr".viewHelper::purified($oQuestion->question),
+                    'data-title'=>$oQuestion->title."_filecount",
+                    'title'=>gT("File count")."\n".viewHelper::purified($oQuestion->question),
+                ));
+                break;
                 // Upload todo
                 break;
             default :
@@ -760,6 +803,53 @@ Class surveyColumnsInformation
         }
     }
 
+    public function uploadAnswerValue() {
+        tracevar($this);
+    }
+    public static function getUploadAnswerValue($data,$column,$iQid,$url) {
+        $name = $column->name;
+        if(empty($data->$name)) {
+            return "";
+        }
+        $filesData = @json_decode(stripslashes($data->$name), true);
+        if(!is_array($filesData)) {
+            return "";
+        }
+        $oQuestion = Question::model()->find("qid = :qid",array(":qid"=>$iQid));
+        if($oQuestion->type != "|") {
+            return;
+        }
+        $aQuestionAttributes = \QuestionAttribute::model()->getQuestionAttributes($iQid);
+        $elementTag = 'dt';
+        $listTag = 'dl';
+        if(empty($aQuestionAttributes['show_title']) && empty($aQuestionAttributes['show_comment']) ) {
+            $elementTag = 'li';
+            $listTag = 'ul';
+        }
+        $url= @json_decode(base64_decode($url),1);
+        $htmlList = array();
+        foreach($filesData as $fileData) {
+            $index = 0;
+            if(isset($fileData['name'])) {
+                $element = CHtml::encode(urldecode($fileData['name']));
+                if($url) {
+                    $params = array_merge($url['params'],array('sid'=>$oQuestion->sid,'srid'=>$data->id,'qid'=>$oQuestion->qid,'fileindex'=>$index));
+                    $element = CHtml::link($element,Yii::app()->getController()->createUrl($url['route'],$params),array('download'=>true));
+                }
+                $htmlElement = CHtml::tag($elementTag,array(),$element);
+                if(!empty($aQuestionAttributes['show_title'])) {
+                    $title = !empty($fileData['title']) ? $fileData['title'] : '-';
+                    $htmlElement .= CHtml::tag("dd",array(),$title);
+                }
+                if(!empty($aQuestionAttributes['show_comment'])) {
+                    $comment = !empty($fileData['comment']) ? $fileData['comment'] : '-';
+                    $htmlElement .= CHtml::tag("dd",array(),$comment);
+                }
+                $htmlList[] = $htmlElement;
+            }
+        }
+        return CHtml::tag("div",array('class'=>'answer-value','title'=>gT("Files")),CHtml::tag($listTag,array('class'=>'file-list'),implode($htmlList)));
+    }
     public static function getDateValue() {
 
     }
