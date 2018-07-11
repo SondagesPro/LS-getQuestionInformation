@@ -219,12 +219,20 @@ Class surveyColumnsInformation
             case 'language':
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = array_merge($aDefaultColumnInfo,array(
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
-                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]"). self::getExtraHtmlHeader($oQuestion),
+                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestion),
                     'filter'=>self::getFilter($oQuestion),
                     //~ 'filterInputOptions'=>array('multiple'=>true),
                     'type'=>'raw',
                     'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'")',
                 ));
+                if($oQuestion->type == "O") {
+                    $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment"] = array_merge($aDefaultColumnInfo,array(
+                        'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment",
+                        'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_comment]") . CHTml::tag('small',array(),gT('Comment')). self::getExtraHtmlHeader($oQuestion),
+                        'type'=>'raw',
+                        'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getFreeAnswerValue($data,$this)',
+                    ));
+                }
                 break;
             case 'array-5-pt':
             case 'array-10-pt':
@@ -322,9 +330,9 @@ Class surveyColumnsInformation
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getCheckValue($data,$this,'.$oQuestion->qid.')',
                         ));
                         if($questionClass=='multiple-opt-comments') {
-                           $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title.'_comment'] = array_merge($aDefaultColumnInfo,array(
+                           $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title.'comment'] = array_merge($aDefaultColumnInfo,array(
                                 'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title.'comment',
-                                'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}_comment]"). CHTml::tag('small',array(),gT('Comment')),
+                                'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}_comment]"). CHTml::tag('small',array(),gT('Comment')). self::getExtraHtmlHeader($oQuestion,$oSubQuestion),
                             ));
                         }
                     }
@@ -409,7 +417,7 @@ Class surveyColumnsInformation
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
                     $header = "<strong>[{$oQuestion->title}_{$count}]</strong>"
-                            . "<small>".viewHelper::flatEllipsizeText($oQuestion->question,true,40,'…',0.6)."</small>"
+                            . self::getExtraHtmlHeader($oQuestion)
                             . "<small>".sprintf(gT("Rank %s"),$count)."</small>";
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count] = array_merge($aDefaultColumnInfo,array(
                         'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count,
@@ -458,8 +466,15 @@ Class surveyColumnsInformation
             $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"] = array_merge($aDefaultColumnInfo,
                 array(
                 'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other",
-                'header'=>"<strong>[{$oQuestion->title}_other]</strong> <small>".viewHelper::flatEllipsizeText($oQuestion->question,true,40,'…',0.6)."</small>",
+                'header'=>"<strong>[{$oQuestion->title}_other]</strong>".self::getExtraHtmlHeader($oQuestion). CHTml::tag('small',array(),gT('Other')),
             ));
+            if($oQuestion->type == "P") { /* Specific with comment … */
+                $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."othercomment"] = array_merge($aDefaultColumnInfo,
+                    array(
+                    'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."othercomment",
+                    'header'=>"<strong>[{$oQuestion->title}_othercomment]</strong>".self::getExtraHtmlHeader($oQuestion). CHTml::tag('small',array(),gT('Other')." - ".gT('Comment')),
+                ));
+            }
         }
         return $aColumnsInfo;
     }
@@ -520,6 +535,18 @@ Class surveyColumnsInformation
                     'data-title'=>$oQuestion->title,
                     'title'=>viewHelper::flatEllipsizeText($oQuestion->question)
                 ));
+                if($oQuestion->type == "O") {
+                    $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment";
+                    if($byEm) {
+                        $key = $oQuestion->title."_".$oSubQuestion->title."comment";
+                    }
+                    $aListData['data'][$key] = "[{$oQuestion->title}_comment] (".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7).") ".gT("Comments");
+                    $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                        'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments"),
+                        'data-title'=>$oQuestion->title."_comment",
+                        'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments"),
+                    ));
+                }
                 break;
             /* Multiple column question (array/multiple choice) */
             case "A": // 'array-5-pt';
@@ -550,6 +577,18 @@ Class surveyColumnsInformation
                             'data-title'=>$oQuestion->title."_".$oSubQuestion->title,
                             'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
                         ));
+                        if($oQuestion->type == "P") {
+                            $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."comment";
+                            if($byEm) {
+                                $key = $oQuestion->title."_".$oSubQuestion->title."comment";
+                            }
+                            $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}comment] (".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7).") (".gT("Comments").") ".viewHelper::flatEllipsizeText($oSubQuestion->question,true,40,'…',0.6);
+                            $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                                'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments")."<hr>".viewHelper::purified($oSubQuestion->question),
+                                'data-title'=>$oQuestion->title."_".$oSubQuestion->title."comment",
+                                'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments")."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
+                            ));
+                        }
                     }
                 }
                 break;
@@ -664,7 +703,7 @@ Class surveyColumnsInformation
                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount";
                 $aListData['data'][$key] = "[{$oQuestion->title}_filecount] ".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7);
                 $aListData['options'][$key] = array_merge($aDefaultOptions,array(
-                    'data-content'=>gT("File count")."hr".viewHelper::purified($oQuestion->question),
+                    'data-content'=>gT("File count")."<hr>".viewHelper::purified($oQuestion->question),
                     'data-title'=>$oQuestion->title."_filecount",
                     'title'=>gT("File count")."\n".viewHelper::purified($oQuestion->question),
                 ));
@@ -674,26 +713,39 @@ Class surveyColumnsInformation
             default :
                 tracevar($oQuestion->type);
         }
-        /* @todo other and comments */
-        
+        if(self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
+            $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other";
+            if($byEm) {
+                $key = $oQuestion->title."_other";
+            }
+            $aListData['data'][$key] = "[{$oQuestion->title}_other] (".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7).") ".gT("Other");
+            $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                'data-content'=>viewHelper::purified($oQuestion->question)."<hr>".gT("Other"),
+                'data-title'=>$oQuestion->title."_other",
+                'title'=>viewHelper::purified($oQuestion->question)."\n".gT("Other"),
+            ));
+            if($oQuestion->type == "P") { /* Specific with comment … */
+                $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"."comment";
+                if($byEm) {
+                    $key = $oQuestion->title."_other"."comment";
+                }
+                $aListData['data'][$key] = "[{$oQuestion->title}_othercomment] (".viewHelper::flatEllipsizeText($oQuestion->question,true,30,'…',0.7).") (".gT("Comments").") ".gT("Other");
+                $aListData['options'][$key] = array_merge($aDefaultOptions,array(
+                    'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments")."<hr>".gT("Other"),
+                    'data-title'=>$oQuestion->title."_other"."comment",
+                    'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments")."\n".gT("Other"),
+                ));
+            }
+        }
         return $aListData;
     }
     /**
      * @param string $type
      * return boolean
      */
-    private static function allowOther($type){
+    public static function allowOther($type){
         $allowOther = array("L","!","P","M");
         return in_array($type,$allowOther);
-    }
-
-    /**
-     * @param string $type
-     * return boolean
-     */
-    private static function haveComment($type){
-        $haveComment = array('O','P');
-        return in_array($type,$haveComment);
     }
 
     /**
@@ -803,9 +855,6 @@ Class surveyColumnsInformation
         }
     }
 
-    public function uploadAnswerValue() {
-        tracevar($this);
-    }
     public static function getUploadAnswerValue($data,$column,$iQid,$url) {
         $name = $column->name;
         if(empty($data->$name)) {
