@@ -109,14 +109,15 @@ Class surveyColumnsInformation
     {
         $questionTable = Question::model()->tableName();
         $command = Yii::app()->db->createCommand()
-            ->select("qid,{{questions}}.language as language")
+            ->select("qid,{{questions}}.language as language,{{groups}}.group_order as group_order, {{questions}}.question_order as question_order")
             ->from($questionTable)
             ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
             ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
+            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
             ->bindParam(":sid", $this->iSurvey, PDO::PARAM_INT)
-            ->bindParam(":language", $this->language, PDO::PARAM_STR)
-            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc");
-        return $command->query()->readAll();
+            ->bindParam(":language", $this->language, PDO::PARAM_STR);
+        $allQuestions = $command->query()->readAll();
+        return $allQuestions;
     }
 
     /**
