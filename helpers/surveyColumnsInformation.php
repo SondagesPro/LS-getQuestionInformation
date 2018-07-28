@@ -109,7 +109,7 @@ Class surveyColumnsInformation
     {
         $questionTable = Question::model()->tableName();
         $command = Yii::app()->db->createCommand()
-            ->select("qid,{{questions}}.language as language,{{groups}}.group_order as group_order, {{questions}}.question_order as question_order")
+            ->select("qid,{{questions}}.language as language,{{groups}}.group_order, {{questions}}.question_order")
             ->from($questionTable)
             ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
             ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")

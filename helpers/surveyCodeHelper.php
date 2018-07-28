@@ -25,7 +25,7 @@ use Question;
 use QuestionAttribute;
 use Answer;
 
-Class surveyColumnsInformation
+Class surveyCodeHelper
 {
     /**
     /* Get an array with DB column name key and EM code for value or columns information for 
@@ -41,56 +41,22 @@ Class surveyColumnsInformation
         if(!$oSurvey) {
           return null;
         }
-        if(!$language || !in_array($language,$oSurvey->getAllLanguages()) {
+        if(!$language || !in_array($language,$oSurvey->getAllLanguages()) ) {
             $language = $oSurvey->language;
         }
         $questionTable = Question::model()->tableName();
         $command = Yii::app()->db->createCommand()
-            ->select("qid")
+            ->select("qid,{{questions}}.language as language,{{groups}}.group_order, {{questions}}.question_order")
             ->from($questionTable)
-            ->where("($questionTable.sid = :sid AND {{questions}}.language = :language AND $questionTable.parent_qid = 0)")
+            ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
             ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
+            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
             ->bindParam(":sid", $iSurvey, PDO::PARAM_INT)
-            ->bindParam(":language", $language, PDO::PARAM_STR)
-            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc");
+            ->bindParam(":language", $language, PDO::PARAM_STR);
         $allQuestions = $command->query()->readAll();
         $aColumnsToCode = array();
         foreach ($allQuestions as $aQuestion) {
-            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionInformations($aQuestion['qid'],$columns));
-        }
-        return $aColumnsToCode;
-    }
-
-    /**
-    /* Get an array with DB column name key and EM code for value or columns information for 
-     * @param integer $iSurvey
-     * @param string $language
-     * @param string $language
-     * @return null|array
-     */
-    public static function getAllQuestionsListData($iSurvey,$language=null,$columns=false)
-    {
-        // First get all question
-        $oSurvey = Survey::model()->findByPk($iSurvey);
-        if(!$oSurvey) {
-          return null;
-        }
-        if(!$language || !in_array($language,$oSurvey->getAllLanguages()) {
-            $language = $oSurvey->language;
-        }
-        $questionTable = Question::model()->tableName();
-        $command = Yii::app()->db->createCommand()
-            ->select("qid")
-            ->from($questionTable)
-            ->where("($questionTable.sid = :sid AND {{questions}}.language = :language AND $questionTable.parent_qid = 0)")
-            ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
-            ->bindParam(":sid", $iSurvey, PDO::PARAM_INT)
-            ->bindParam(":language", $language, PDO::PARAM_STR)
-            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc");
-        $allQuestions = $command->query()->readAll();
-        $aColumnsToCode = array();
-        foreach ($allQuestions as $aQuestion) {
-            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionInformations($aQuestion['qid'],$columns));
+            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionColumn($aQuestion['qid'],$columns));
         }
         return $aColumnsToCode;
     }
@@ -101,8 +67,12 @@ Class surveyColumnsInformation
      * @throw Exception if debug
      * @return array|null
      */
-    private static function getQuestionInformation($qid,$language) {
-        $oQuestion = Question::model()->find("qid=:qid AND language=:language",array(":qid"=>$qid,":language"=>$language));
+    public static function getQuestionColumn($qid,$language=null) {
+        if($language) {
+            $oQuestion = Question::model()->find("qid=:qid AND language=:language",array(":qid"=>$qid,":language"=>$language));
+        } else {
+            $oQuestion = Question::model()->find("qid=:qid",array(":qid"=>$qid)); // Get the first one, language not really needed
+        }
         if(!$oQuestion) {
             if(defined('YII_DEBUG') && YII_DEBUG) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -124,7 +94,7 @@ Class surveyColumnsInformation
                 break;
             case 'dual':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'title,question_order',
                     'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
@@ -138,7 +108,7 @@ Class surveyColumnsInformation
                 break;
             case 'sub':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'title,question_order',
                     'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
@@ -173,7 +143,7 @@ Class surveyColumnsInformation
                 break;
             case 'double':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'title,question_order',
                     'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
@@ -181,7 +151,7 @@ Class surveyColumnsInformation
                 if($oSubQuestionsY) {
                     foreach($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title',
+                            'select'=>'title,question_order',
                             'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
                             'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
