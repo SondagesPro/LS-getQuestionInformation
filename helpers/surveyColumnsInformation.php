@@ -849,7 +849,7 @@ Class surveyColumnsInformation
                 $aAnswers = self::getFilter($oQuestion,$scale,false);
                 if(isset($aAnswers[$data->$name])) {
                     $answer = $aAnswers[$data->$name];
-                    return CHtml::tag("div",array('class'=>'answer-value'),"[".$data->$name."] ".viewHelper::purified($answer));
+                    return CHtml::tag("div",array('class'=>'answer-value'),"<code>[".$data->$name."]</code> ".viewHelper::purified($answer));
                 }
                 return CHtml::tag("div",array('class'=>'answer-value'),CHtml::encode($data->$name));
                 break;
