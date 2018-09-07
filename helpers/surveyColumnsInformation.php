@@ -1093,7 +1093,7 @@ Class surveyColumnsInformation
                         if($oSubQuestionsX) {
                             foreach($oSubQuestionsX as $oSubQuestionX) {
                                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = 'text';
-                                if($questionClass == 'array-multi-flexi-text') {
+                                if($questionClass == 'array-multi-flexi') {
                                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = 'float';
                                 }
                             }
