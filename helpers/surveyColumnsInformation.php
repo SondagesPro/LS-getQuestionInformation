@@ -413,6 +413,8 @@ Class surveyColumnsInformation
                     array(
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
                     'header'=>CHTml::tag('strong',array(),"[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestion),
+                    'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getDateValue($data,$this,'.$oQuestion->qid.','.$oQuestion->sid.')',
+                    'filter'=> false,
                 ));
                 break;
             case 'ranking':
@@ -914,8 +916,26 @@ Class surveyColumnsInformation
         }
         return CHtml::tag("div",array('class'=>'answer-value','title'=>gT("Files")),CHtml::tag($listTag,array('class'=>'file-list'),implode($htmlList)));
     }
-    public static function getDateValue() {
-
+    public static function getDateValue($data,$column,$iQid,$surveyid) {
+        $name = $column->name;
+        if(is_null($data->$name) || $data->$name==="") {
+            return "";// disable nullDisplay since no diff between null and not answered $data->$name;
+        }
+        $dateValue = $data->$name;
+        $dateFormatData = getDateFormatData(\SurveyLanguageSetting::model()->getDateFormat($surveyid,Yii::app()->getLanguage()));
+        $dateFormat = $dateFormatData['phpdate'];
+        $attributeDateFormat = QuestionAttribute::model()->find("qid = :qid and attribute = 'date_format'",array(":qid"=>$iQid));
+        if(!empty($attributeDateFormat) && trim($attributeDateFormat->value)) {
+            $dateFormat = getPHPDateFromDateFormat($attributeDateFormat->value);
+        }
+        $datetimeobj = \DateTime::createFromFormat('!Y-m-d H:i:s', $dateValue);
+        if ($datetimeobj) {
+            $dateValue = $datetimeobj->format($dateFormat);
+        } else {
+            $dateValue = '';
+        }
+        return $dateValue;
+        //~ $this->language;
     }
 
     public static function getDecimalValue($data,$column,$iQid) {
