@@ -796,6 +796,21 @@ Class surveyColumnsInformation
      */
     public function getFilter($oQuestion,$scale=0,$strip=true)
     {
+        $questionClass= Question::getQuestionClass($oQuestion->type);
+        if($questionClass == "date") {
+            return $this->getDateFilter($oQuestion->sid."X".$oQuestion->gid."X".$oQuestion->qid,$oQuestion->qid);
+        }
+        return self::getFixedFilter($oQuestion,$scale,$strip);
+    }
+
+    /**
+     * get fixed filter for this column
+     * @param \Question
+     * @param integer $scale
+     * @param boolean striped;
+     * return array|false|null
+     */
+    public static function getFixedFilter($oQuestion,$scale=0,$strip=true) {
         /* @TODO : add other */
         $questionClass= Question::getQuestionClass($oQuestion->type);
         switch ($questionClass) {
@@ -859,12 +874,11 @@ Class surveyColumnsInformation
                     "Y" => gT("Yes"),
                 );
             case 'date' :
-                return $this->getDateFilter($oQuestion->sid."X".$oQuestion->gid."X".$oQuestion->qid,$oQuestion->qid);
+                return false;
             default:
                 return null;
         }
     }
-
     public static function getFreeAnswerValue($data,$column) {
         $name = $column->name;
         if(empty($data->$name)) {
@@ -886,7 +900,7 @@ Class surveyColumnsInformation
                 return $data->$name;
                 break;
             default:
-                $aAnswers = self::getFilter($oQuestion,$scale,false);
+                $aAnswers = self::getFixedFilter($oQuestion,$scale,false);
                 if(isset($aAnswers[$data->$name])) {
                     $answer = $aAnswers[$data->$name];
                     return CHtml::tag("div",array('class'=>'answer-value'),"<code>[".$data->$name."]</code> ".viewHelper::purified($answer));
