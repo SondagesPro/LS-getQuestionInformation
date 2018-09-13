@@ -20,6 +20,7 @@
 namespace getQuestionInformation\helpers;
 use Yii;
 use PDO;
+use Exception;
 use Survey;
 Yii::import('application.helpers.viewHelper');
 use viewHelper;
