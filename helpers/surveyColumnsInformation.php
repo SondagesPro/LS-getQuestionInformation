@@ -43,6 +43,7 @@ Class surveyColumnsInformation
     
     /* WIP */
     public $multipleSelect = false;
+
     /**
      * @var array|null
      * route and params for create url @see https://www.yiiframework.com/doc/api/1.1/CUrlManager#createUrl-detail
@@ -50,6 +51,11 @@ Class surveyColumnsInformation
      * params are autocompleted with sid=$sid , srid=$srid, qid=$qid, fileindex=$fileindex
      */
     public $downloadUrl = null;
+
+    /**
+     * @var model
+     */
+    public $model = null;
 
     /**
      * @var boolean
@@ -235,7 +241,7 @@ Class surveyColumnsInformation
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = array_merge($aDefaultColumnInfo,array(
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
                     'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestion),
-                    'filter'=>self::getFilter($oQuestion),
+                    'filter'=>$this->getFilter($oQuestion),
                     //~ 'filterInputOptions'=>array('multiple'=>true),
                     'type'=>'raw',
                     'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'")',
@@ -266,7 +272,7 @@ Class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array_merge($aDefaultColumnInfo,array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title,
                             'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestion,$oSubQuestion),
-                            'filter'=>self::getFilter($oQuestion),
+                            'filter'=>$this->getFilter($oQuestion),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'")',
@@ -286,7 +292,7 @@ Class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0"]=array_merge($aDefaultColumnInfo,array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0",
                             'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}_1]") . self::getExtraHtmlHeader($oQuestion,$oSubQuestion) . CHtml::tag("small",array(),gT("SCale 1")),
-                            'filter'=>self::getFilter($oQuestion),
+                            'filter'=>$this->getFilter($oQuestion),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'",0)',
@@ -294,7 +300,7 @@ Class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1"]=array_merge($aDefaultColumnInfo,array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1",
                             'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}_2]") . self::getExtraHtmlHeader($oQuestion,$oSubQuestion) . CHtml::tag("small",array(),gT("SCale 2")),
-                            'filter'=>self::getFilter($oQuestion),
+                            'filter'=>$this->getFilter($oQuestion),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'",1)',
@@ -342,7 +348,7 @@ Class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array_merge($aDefaultColumnInfo,array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title,
                             'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestion,$oSubQuestion),
-                            'filter'=>self::getFilter($oQuestion),
+                            'filter'=>$this->getFilter($oQuestion),
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getCheckValue($data,$this,'.$oQuestion->qid.')',
                         ));
                         if($questionClass=='multiple-opt-comments') {
@@ -414,7 +420,7 @@ Class surveyColumnsInformation
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
                     'header'=>CHTml::tag('strong',array(),"[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestion),
                     'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getDateValue($data,$this,'.$oQuestion->qid.','.$oQuestion->sid.')',
-                    'filter'=> false,
+                    'filter'=>$this->getFilter($oQuestion),
                 ));
                 break;
             case 'ranking':
@@ -438,7 +444,7 @@ Class surveyColumnsInformation
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count] = array_merge($aDefaultColumnInfo,array(
                         'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count,
                         'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}_{$count}]") . self::getExtraHtmlHeader($oQuestion). "<small>".sprintf(gT("Rank %s"),$count)."</small>",
-                        'filter'=>self::getFilter($oQuestion),
+                        'filter'=>$this->getFilter($oQuestion),
                         'type'=>'raw',
                         'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestion->language.'")',
                     ));
@@ -765,14 +771,29 @@ Class surveyColumnsInformation
         return in_array($type,$allowOther);
     }
 
+    public function getDateFilter($column,$iQid=null) {
+        if(empty($this->model)) {
+            return false;
+        }
+        if(!$this->model->filterOnDate) {
+            /* Model need to explicit allowing filterOnDate */
+            return false;
+        }
+        if(method_exists($this->model,'getDateFilter')) {
+            return $this->model->getDateFilter($column,$iQid);
+        }
+        $value = empty($this->model->$column) ? null : $this->model->$column;
+        return CHtml::dateField(get_class($this->model)."[".$column."]",$value,array("class"=>'form-control input-sm filter-date'));
+    }
+
     /**
      * get the filter for this column
      * @param \Question
      * @param integer $scale
      * @param boolean striped;
-     * return array|null
+     * return array|string|null
      */
-    public static function getFilter($oQuestion,$scale=0,$strip=true)
+    public function getFilter($oQuestion,$scale=0,$strip=true)
     {
         /* @TODO : add other */
         $questionClass= Question::getQuestionClass($oQuestion->type);
@@ -830,12 +851,14 @@ Class surveyColumnsInformation
                     "F" => gT("Female"),
                 );
             case 'language':
-                return self::getFilterLanguage($oQuestion->sid);
+                return $this->getFilterLanguage($oQuestion->sid);
             case 'multiple-opt':
             case 'multiple-opt-comments':
                 return array(
                     "Y" => gT("Yes"),
                 );
+            case 'date' :
+                return $this->getDateFilter($oQuestion->sid."X".$oQuestion->gid."X".$oQuestion->qid,$oQuestion->qid);
             default:
                 return null;
         }
@@ -928,6 +951,7 @@ Class surveyColumnsInformation
         if(!empty($attributeDateFormat) && trim($attributeDateFormat->value)) {
             $dateFormat = getPHPDateFromDateFormat($attributeDateFormat->value);
         }
+        
         $datetimeobj = \DateTime::createFromFormat('!Y-m-d H:i:s', $dateValue);
         if ($datetimeobj) {
             $dateValue = $datetimeobj->format($dateFormat);
@@ -956,7 +980,7 @@ Class surveyColumnsInformation
         return ($data->$name) ? gT("Yes") : "";/* @todo : find filter for "" VS null */
     }
 
-    public static function getFilterLanguage($surveyId) {
+    public function getFilterLanguage($surveyId) {
         $aLanguages = Survey::model()->findByPk($surveyId)->getAllLanguages();
         $aFilterLanguages = array();
         foreach($aLanguages as $language) {
