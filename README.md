@@ -9,7 +9,7 @@ Tool for opther plugin : have information about all questions in survey.
 - Clone in plugins/getQuestionInformation directory : `git clone https://gitlab.com/SondagesPro/coreAndTools/getQuestionInformation.git`
 
 ### Via ZIP dowload
-- Get the file [reloadAnyResponse.zip](https://extensions.sondages.pro/IMG/auto/getQuestionInformation.zip)
+- Get the file [getQuestionInformation.zip](https://extensions.sondages.pro/IMG/auto/getQuestionInformation.zip)
 - Extract : `unzip getQuestionInformation.zip`
 - Move the directory to plugins/ directory inside LimeSurvey
 
