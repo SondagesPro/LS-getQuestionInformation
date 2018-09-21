@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.0.0
+ * @version 1.0.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,7 +32,7 @@ use Answer;
 /* @Todo : replace by non static function */
 Class surveyColumnsInformation
 {
-
+    const apiversion=1;
     /**
      * @var integer survey id
      */
@@ -221,9 +221,9 @@ Class surveyColumnsInformation
         switch($questionClass) {
             /* Single text */
             case 'text-short':
+            case 'equation':
             case 'text-long':
             case 'text-huge':
-            case 'equation':
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = array_merge($aDefaultColumnInfo,
                     array(
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
@@ -879,6 +879,13 @@ Class surveyColumnsInformation
                 return null;
         }
     }
+
+    /**
+     * @see
+     * @param Object $data current model
+     * @param string $column name
+     * @return string
+     */
     public static function getFreeAnswerValue($data,$column) {
         $name = $column->name;
         if(empty($data->$name)) {
@@ -1024,7 +1031,7 @@ Class surveyColumnsInformation
     }
 
     /**
-     * return array  with DB column name key and type of data (float,decimal,text,choice)
+     * return array  with DB column name key and type of data (float,decimal,text,choice, number)
      * @todo : add system with attribute (equation as number, only integer …)
      * @todo : add an attribute to show as
      * @param integer $qid
@@ -1048,6 +1055,8 @@ Class surveyColumnsInformation
         $language = $oQuestion->language;
         $aColumnsType = array();
         $questionClass= Question::getQuestionClass($oQuestion->type);
+        /* Get is forced number */
+
         switch($questionClass) {
             /* Single text */
             case 'text-short':
@@ -1055,6 +1064,9 @@ Class surveyColumnsInformation
             case 'text-huge':
             case 'equation':
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = 'text';
+                if(self::getAttribute($qid,'numbers_only')) {
+                    $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = 'number';
+                }
                 break;
             case 'choice-5-pt-radio':
             case 'list-radio':
@@ -1155,6 +1167,9 @@ Class surveyColumnsInformation
                                 if($questionClass == 'array-multi-flexi') {
                                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = 'float';
                                 }
+                                if(self::getAttribute($qid,'numbers_only')) {
+                                    $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = 'number';
+                                }
                             }
                         }
                     }
@@ -1167,9 +1182,13 @@ Class surveyColumnsInformation
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
                 ));
+                $type = 'text';
+                if(self::getAttribute($qid,'numbers_only')) {
+                    $type = 'number';
+                }
                 if($oSubQuestions) {
                     foreach($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = 'text';
+                        $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = $type;
                     }
                 }
                 break;
@@ -1217,4 +1236,22 @@ Class surveyColumnsInformation
         return $aColumnsInfo;
     }
 
+    /**
+     * get value of an attribute
+     * @param integer $qid
+     * @param $name
+     * return null|string
+     */
+    private static function getAttribute($qid,$name)
+    {
+        $AttributeCriteria = new \CDbCriteria;
+        $AttributeCriteria->select = 'value';
+        $AttributeCriteria->compare('qid',$qid);
+        $AttributeCriteria->compare('attribute',$name);
+        $oAttribute = QuestionAttribute::model()->find($AttributeCriteria);
+        if(empty($oAttribute)) {
+            return null;
+        }
+        return $oAttribute->value;
+    }
 }

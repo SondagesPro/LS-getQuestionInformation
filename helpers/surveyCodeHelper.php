@@ -75,7 +75,7 @@ Class surveyCodeHelper
         }
         if(!$oQuestion) {
             if(defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
