@@ -472,7 +472,7 @@ Class surveyColumnsInformation
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount"] = array_merge($aDefaultColumnInfo,
                     array(
                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount" ,
-                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") . gT("File count"),
+                    'header'=> CHTml::tag('strong',array(),"[{$oQuestion->title}]") .CHTml::tag('small',array(),gT("File count")),
                 ));
                 break;
             case 'boilerplate':
