@@ -84,7 +84,7 @@ Class surveyColumnsInformation
     }
 
     /**
-     * Get an array with DB column name key and EM code for value or columns information for 
+     * Get an array with DB column name key and EM code for value or columns information for
      * @return null|array
      */
     public function allQuestionsColumns()
@@ -867,7 +867,7 @@ Class surveyColumnsInformation
                     "F" => gT("Female"),
                 );
             case 'language':
-                return $this->getFilterLanguage($oQuestion->sid);
+                return self::getFilterLanguage($oQuestion->sid);
             case 'multiple-opt':
             case 'multiple-opt-comments':
                 return array(
@@ -1002,7 +1002,7 @@ Class surveyColumnsInformation
         return ($data->$name) ? gT("Yes") : "";/* @todo : find filter for "" VS null */
     }
 
-    public function getFilterLanguage($surveyId) {
+    public static function getFilterLanguage($surveyId) {
         $aLanguages = Survey::model()->findByPk($surveyId)->getAllLanguages();
         $aFilterLanguages = array();
         foreach($aLanguages as $language) {
@@ -1219,6 +1219,7 @@ Class surveyColumnsInformation
                 break;
             case 'boilerplate':
                 /* Don't show it*/
+                $aColumnsInfo = array();
                 break;
             default:
                 tracevar($questionClass);
