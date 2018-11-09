@@ -37,11 +37,12 @@ Class surveyColumnsInformation
      * @var integer survey id
      */
     public $iSurvey;
+
     /**
      * @var string language
      */
     public $language;
-    
+
     /* WIP */
     public $multipleSelect = false;
 
@@ -84,7 +85,7 @@ Class surveyColumnsInformation
     }
 
     /**
-     * Get an array with DB column name key and EM code for value or columns information for
+     * Get an array with DB column name key and EM code for value or columns information for 
      * @return null|array
      */
     public function allQuestionsColumns()
@@ -1052,6 +1053,7 @@ Class surveyColumnsInformation
             }
             return null;
         }
+        $aColumnsInfo = array();
         $language = $oQuestion->language;
         $aColumnsType = array();
         $questionClass= Question::getQuestionClass($oQuestion->type);
@@ -1219,7 +1221,6 @@ Class surveyColumnsInformation
                 break;
             case 'boilerplate':
                 /* Don't show it*/
-                $aColumnsInfo = array();
                 break;
             default:
                 tracevar($questionClass);
