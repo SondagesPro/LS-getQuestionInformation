@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2019 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.0.1
+ * @version 1.1.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -78,13 +78,13 @@ Class surveyCodeHelper
             $oQuestion = Question::model()->find("qid=:qid",array(":qid"=>$qid)); // Get the first one, language not really needed
         }
         if(!$oQuestion) {
-            if(defined('YII_DEBUG') && YII_DEBUG) {
+            if(Yii::app()->getConfig('debug')>=2) {
                 throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
         if($oQuestion->parent_qid) {
-            if(defined('YII_DEBUG') && YII_DEBUG) {
+            if(Yii::app()->getConfig('debug')>=2) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
@@ -172,10 +172,10 @@ Class surveyCodeHelper
                 // Nothing needed
                 break;
             default:
-                if(defined('YII_DEBUG') && YII_DEBUG) {
+                // NUll
+                if(Yii::app()->getConfig('debug')>=2) {
                     throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
                 }  
-                // NUll
         }
         if(self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"]=$oQuestion->title."_other";
