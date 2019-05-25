@@ -3,9 +3,9 @@
  * Description
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2019 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.0.0
+ * @version 1.0.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,6 +27,10 @@ use Answer;
 
 Class surveyCodeHelper
 {
+    /**
+     * The current api version of this file
+     */
+    const apiversion=1;
     /**
     /* Get an array with DB column name key and EM code for value or columns information for 
      * @param integer $iSurvey
@@ -190,7 +194,7 @@ Class surveyCodeHelper
      * @param string $type
      * @return string|null
      */
-    private static function getTypeFromType($type) {
+    public static function getTypeFromType($type) {
         $questionTypeByType = array(
             "1" => 'dual',
             "5" => 'single',
@@ -233,7 +237,7 @@ Class surveyCodeHelper
      * @param string $type
      * return boolean
      */
-    private static function haveComment($type){
+    public static function haveComment($type){
         $haveComment = array('O','P');
         return in_array($type,$haveComment);
     }
@@ -241,7 +245,7 @@ Class surveyCodeHelper
      * @param string $type
      * return boolean
      */
-    private static function allowOther($type){
+    public static function allowOther($type){
         $allowOther = array("L","!","P","M");
         return in_array($type,$allowOther);
     }

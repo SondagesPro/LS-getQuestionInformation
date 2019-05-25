@@ -32,6 +32,9 @@ use Answer;
 /* @Todo : replace by non static function */
 Class surveyColumnsInformation
 {
+    /**
+     * The current api version of this file
+     */
     const apiversion=1;
     /**
      * @var integer survey id
