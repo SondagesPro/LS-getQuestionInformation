@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2020 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.0.1
+ * @version 1.0.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -530,7 +530,7 @@ class surveyColumnsInformation
      */
     public function questionListData($qid)
     {
-        $byEm = $this->ByEmCode;
+        $ByEmCode = $this->ByEmCode;
         $language = $this->language;
         $oQuestion = Question::model()->find("qid=:qid AND language=:language", array(":qid"=>$qid,":language"=>$this->language));
         if (!$oQuestion) {
@@ -570,7 +570,7 @@ class surveyColumnsInformation
             case "!": // list-dropdown
             case "*": // equation
                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid;
-                if ($byEm) {
+                if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
                 $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 60, '…', 0.6);
@@ -581,7 +581,7 @@ class surveyColumnsInformation
                 ));
                 if ($oQuestion->type == "O") {
                     $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment";
-                    if ($byEm) {
+                    if ($ByEmCode) {
                         $key = $oQuestion->title."_".$oSubQuestion->title."comment";
                     }
                     $aListData['data'][$key] = "[{$oQuestion->title}_comment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".gT("Comments");
@@ -612,7 +612,7 @@ class surveyColumnsInformation
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title;
-                        if ($byEm) {
+                        if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title;
                         }
                         $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
@@ -623,7 +623,7 @@ class surveyColumnsInformation
                         ));
                         if ($oQuestion->type == "P") {
                             $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."comment";
-                            if ($byEm) {
+                            if ($ByEmCode) {
                                 $key = $oQuestion->title."_".$oSubQuestion->title."comment";
                             }
                             $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}comment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Comments").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
@@ -646,7 +646,7 @@ class surveyColumnsInformation
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0";
-                        if ($byEm) {
+                        if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title."_0";
                         }
                         $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_0] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Scale 1").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
@@ -656,7 +656,7 @@ class surveyColumnsInformation
                             'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Scale 1")."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
                         ));
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1";
-                        if ($byEm) {
+                        if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title."_1";
                         }
                         $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_1] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Scale 2").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
@@ -688,8 +688,8 @@ class surveyColumnsInformation
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title;
-                                if ($byEm) {
-                                    $key = $oQuestion->title.$oSubQuestionY->title."_".$oSubQuestionX->title;
+                                if ($ByEmCode) {
+                                    $key = $oQuestion->title."_".$oSubQuestionY->title."_".$oSubQuestionX->title;
                                 }
                                 $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestionY->title}_{$oSubQuestionX->title}] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestionY->question, true, 40, '…', 0.6)." - ".viewHelper::flatEllipsizeText($oSubQuestionX->question, true, 40, '…', 0.6);
                                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
@@ -721,7 +721,7 @@ class surveyColumnsInformation
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
                     $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count;
-                    if ($byEm) {
+                    if ($ByEmCode) {
                         $key = $oQuestion->title."_".$count;
                     }
                     $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7)." (".sprintf(gT("Rank %s"), $count).")";
@@ -734,7 +734,7 @@ class surveyColumnsInformation
                 break;
             case '|': // Upload
                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid;
-                if ($byEm) {
+                if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
                 $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7);
@@ -758,7 +758,7 @@ class surveyColumnsInformation
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other";
-            if ($byEm) {
+            if ($ByEmCode) {
                 $key = $oQuestion->title."_other";
             }
             $aListData['data'][$key] = "[{$oQuestion->title}_other] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".gT("Other");
@@ -769,7 +769,7 @@ class surveyColumnsInformation
             ));
             if ($oQuestion->type == "P") { /* Specific with comment … */
                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"."comment";
-                if ($byEm) {
+                if ($ByEmCode) {
                     $key = $oQuestion->title."_other"."comment";
                 }
                 $aListData['data'][$key] = "[{$oQuestion->title}_othercomment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Comments").") ".gT("Other");
