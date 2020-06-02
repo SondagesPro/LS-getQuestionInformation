@@ -743,7 +743,7 @@ class surveyColumnsInformation
                     'data-title'=>$oQuestion->title,
                     'title'=>viewHelper::purified($oQuestion->question),
                 ));
-                $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount";
+                $key = $key."_filecount";
                 $aListData['data'][$key] = "[{$oQuestion->title}_filecount] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7);
                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
                     'data-content'=>gT("File count")."<hr>".viewHelper::purified($oQuestion->question),
