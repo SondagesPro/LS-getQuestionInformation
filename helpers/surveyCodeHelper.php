@@ -32,7 +32,7 @@ Class surveyCodeHelper
      */
     const apiversion=1;
     /**
-    /* Get an array with DB column name key and EM code for value or columns information for 
+    /* Get an array with DB column name key and EM code for value or columns information
      * @param integer $iSurvey
      * @param string $language
      * @param string $language
