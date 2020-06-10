@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2019 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.0
+ * @version 1.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,15 +30,16 @@ Class surveyCodeHelper
     /**
      * The current api version of this file
      */
-    const apiversion=1;
+    const apiversion=1.2;
+
     /**
     /* Get an array with DB column name key and EM code for value or columns information
      * @param integer $iSurvey
      * @param string $language
-     * @param string $language
+     * @param boolean $default column (id, submitdate … )
      * @return null|array
      */
-    public static function getAllQuestions($iSurvey,$language=null,$columns=false)
+    public static function getAllQuestions($iSurvey, $language = null, $default = false)
     {
         // First get all question
         $oSurvey = Survey::model()->findByPk($iSurvey);
@@ -59,8 +60,30 @@ Class surveyCodeHelper
             ->bindParam(":language", $language, PDO::PARAM_STR);
         $allQuestions = $command->query()->readAll();
         $aColumnsToCode = array();
+        if($default) {
+            $aColumnsToCode['id'] = 'id';
+            $aColumnsToCode['submitdate'] = 'submitdate';
+            $aColumnsToCode['lastpage'] = 'lastpage';
+            $aColumnsToCode['startlanguage'] = 'startlanguage';
+            if (Yii::app()->getConfig('DBVersion') >= 290) {
+                $aColumnsToCode['seed'] = 'seed';
+            }
+            if($oSurvey->anonymized != "Y") {
+                $aHeader['token'] = gT("Token");
+            }
+            if($oSurvey->datestamp == "Y") {
+                $aHeader['startdate'] = gT("Date started");
+                $aHeader['datestamp'] = gT("Date last action");
+            }
+            if($oSurvey->ipaddr == "Y") {
+                $aHeader['ipaddr'] = gT("IP address");
+            }
+            if($oSurvey->refurl == "Y") {
+                $aHeader['refurl'] = gT("Referrer URL");
+            }
+        }
         foreach ($allQuestions as $aQuestion) {
-            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionColumn($aQuestion['qid'],$columns));
+            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionColumn($aQuestion['qid'],$language));
         }
         return $aColumnsToCode;
     }
@@ -212,6 +235,7 @@ Class surveyCodeHelper
             "M" => 'sub',
             "N" => 'single',
             "O" => 'single',
+            "K" => 'sub',
             "P" => 'sub',
             "Q" => 'sub',
             "R" => 'ranking',
@@ -246,6 +270,6 @@ Class surveyCodeHelper
      */
     public static function allowOther($type){
         $allowOther = array("L","!","P","M");
-        return in_array($type,$allowOther);
+        return in_array($type, $allowOther);
     }
 }

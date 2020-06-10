@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2020 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.0.2
+ * @version 1.1.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -754,7 +754,10 @@ class surveyColumnsInformation
                 // Upload todo
                 break;
             default:
-                tracevar($oQuestion->type);
+                if(defined('YII_DEBUG') && YII_DEBUG && \Permission::model()->hasGlobalPermission('superadmin')) {
+                    throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
+                }
+                /* Nothing to do */
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other";
@@ -789,8 +792,7 @@ class surveyColumnsInformation
      */
     public static function allowOther($type)
     {
-        $allowOther = array("L","!","P","M");
-        return in_array($type, $allowOther);
+        return surveyCodeHelper::allowOther($type);
     }
 
     public function getDateFilter($column, $iQid = null)
@@ -1259,11 +1261,10 @@ class surveyColumnsInformation
                 /* Don't show it*/
                 break;
             default:
-                tracevar($questionClass);
-                //~ if(defined('YII_DEBUG') && YII_DEBUG) {
-                    //~ throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
-                //~ }
-                // NUll
+                if(defined('YII_DEBUG') && YII_DEBUG && \Permission::model()->hasGlobalPermission('superadmin')) {
+                    throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
+                }
+                /* Nothing to do */
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"] = 'text';
