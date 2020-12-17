@@ -37,3 +37,4 @@ Contribution are welcome, for patch and issue : use [gitlab]( https://gitlab.com
 - HomePage <http://extensions.sondages.pro/>
 - Copyright © 2018-2020 Denis Chenu <http://sondages.pro>
 - Licence : GNU Affero General Public License <https://www.gnu.org/licenses/agpl-3.0.html>
+- [![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/SondagesPro/) : [Donate on Liberapay](https://liberapay.com/SondagesPro/) 

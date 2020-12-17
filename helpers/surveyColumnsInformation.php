@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2020 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.0
+ * @version 1.1.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -582,7 +582,7 @@ class surveyColumnsInformation
                 if ($oQuestion->type == "O") {
                     $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment";
                     if ($ByEmCode) {
-                        $key = $oQuestion->title."_".$oSubQuestion->title."comment";
+                        $key = $oQuestion->title."_comment";
                     }
                     $aListData['data'][$key] = "[{$oQuestion->title}_comment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".gT("Comments");
                     $aListData['options'][$key] = array_merge($aDefaultOptions, array(
