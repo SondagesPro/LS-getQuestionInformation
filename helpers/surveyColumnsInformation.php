@@ -73,10 +73,9 @@ class surveyColumnsInformation
      * constructor
      * @param integer survey id
      * @param string language
-     * @param array options
      * @throw error
      */
-    public function __construct($iSurvey, $language = null, $options = array())
+    public function __construct($iSurvey, $language = null)
     {
         /* Must import viewHelper */
         Yii::import('application.helpers.viewHelper');
