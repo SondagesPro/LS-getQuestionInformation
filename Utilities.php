@@ -24,7 +24,7 @@ Class Utilities
     /**
      * @var float current api version of this file
      */
-    const API = 0.1;
+    const API = 0.2;
 
     /**
      * @param integer $surveyId

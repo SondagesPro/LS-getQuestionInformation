@@ -3,9 +3,9 @@
  * Description
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2020 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.1
+ * @version 1.1.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -293,6 +293,7 @@ class surveyColumnsInformation
                 }
                 break;
             case 'array-flexible-duel-scale':
+            case 'array-flexible-dual-scale':
                 $oSubQuestions = Question::model()->findAll(array(
                     'select'=>'title,question',
                     'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
@@ -844,6 +845,7 @@ class surveyColumnsInformation
             case 'array-flexible-row':
             case 'array-flexible-column':
             case 'array-flexible-duel-scale':
+            case 'array-flexible-dual-scale':
             case 'ranking':
                 $answers = Answer::model()->findAll(array(
                     'condition' => "qid=:qid and language=:language and scale_id=:scale",
@@ -1138,6 +1140,7 @@ class surveyColumnsInformation
                 }
                 break;
             case 'array-flexible-duel-scale':
+            case 'array-flexible-dual-scale': // See https://github.com/LimeSurvey/LimeSurvey/commit/048cfdcbde78b3c60f2188378a36b210df3b24ab
                 $oSubQuestions = Question::model()->findAll(array(
                     'select'=>'title,question',
                     'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
