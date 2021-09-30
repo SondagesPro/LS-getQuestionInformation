@@ -3,9 +3,9 @@
  * Tool for others plugins
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2020 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.11.0
+ * @version 1.12.0-alpha
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -24,7 +24,68 @@ class getQuestionInformation extends PluginBase {
     static protected $name = 'getQuestionInformation';
     
     public function init() {
-        Yii::setPathOfAlias(get_class($this), dirname(__FILE__));
+        $this->subscribe('beforeToolsMenuRender');
+        if (intval(App()->getConfig('versionnumber')) < 4) {
+            Yii::setPathOfAlias(get_class($this), dirname (__FILE__) . DIRECTORY_SEPARATOR . 'legacy');
+            App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
+            return;
+        }
+        Yii::setPathOfAlias(get_class($this), dirname (__FILE__));
         App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
     }
+
+    /**
+     * Main function to test setting
+     * @param int $surveyId Survey id
+     *
+     * @return string
+     */
+    public function actionSettings($surveyId)
+    {
+        $columToCode = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
+        $allQuestionsColumns = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionsColumns($surveyId, null, true);
+        $aData = array(
+            'columToCode' => array(), // $columToCode,
+            'allQuestionsColumns' => $allQuestionsColumns
+        );
+        $content = $this->renderPartial('settings', $aData, true);
+        return $content;
+    }
+
+    /**
+     * see beforeToolsMenuRender event
+     *
+     * @return void
+     */
+    public function beforeToolsMenuRender()
+    {
+        if (!$this->getEvent()) {
+            throw new CHttpException(403);
+        }
+        $event = $this->getEvent();
+        $surveyId = $event->get('surveyId');
+        $oSurvey = Survey::model()->findByPk($surveyId);
+        if(Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
+            $aMenuItem = array(
+                'label' => 'Check question information',
+                'iconClass' => 'fa fa-list-alt ',
+                'href' => Yii::app()->createUrl(
+                    'admin/pluginhelper',
+                    array(
+                        'sa' => 'sidebody',
+                        'plugin' => get_class($this),
+                        'method' => 'actionSettings',
+                        'surveyId' => $surveyId
+                    )
+                ),
+            );
+            if (class_exists("\LimeSurvey\Menu\MenuItem")) {
+                $menuItem = new \LimeSurvey\Menu\MenuItem($aMenuItem);
+            } else {
+                $menuItem = new \ls\menu\MenuItem($aMenuItem);
+            }
+            $event->append('menuItems', array($menuItem));
+        }
+    }
+
 }
