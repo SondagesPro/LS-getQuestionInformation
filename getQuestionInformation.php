@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.12.0-alpha
+ * @version 1.12.0-beta2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -24,7 +24,9 @@ class getQuestionInformation extends PluginBase {
     static protected $name = 'getQuestionInformation';
     
     public function init() {
-        $this->subscribe('beforeToolsMenuRender');
+        if(App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink') ) {
+            $this->subscribe('beforeToolsMenuRender');
+        }
         if (intval(App()->getConfig('versionnumber')) < 4) {
             Yii::setPathOfAlias(get_class($this), dirname (__FILE__) . DIRECTORY_SEPARATOR . 'legacy');
             App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
@@ -44,9 +46,11 @@ class getQuestionInformation extends PluginBase {
     {
         $columToCode = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
         $allQuestionsColumns = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionsColumns($surveyId, null, true);
+        $allQuestionAnswers = \getQuestionInformation\helpers\surveyAnswers::getAllQuestionsAnswers($surveyId, null);
         $aData = array(
-            'columToCode' => array(), // $columToCode,
-            'allQuestionsColumns' => $allQuestionsColumns
+            'columToCode' => $columToCode,
+            'allQuestionsColumns' => $allQuestionsColumns,
+            'allQuestionAnswers' => $allQuestionAnswers
         );
         $content = $this->renderPartial('settings', $aData, true);
         return $content;

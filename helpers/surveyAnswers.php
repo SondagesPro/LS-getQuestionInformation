@@ -51,10 +51,9 @@ class surveyAnswers
      * constructor
      * @param integer survey id
      * @param string language
-     * @param array options
      * @throw error
      */
-    public function __construct($iSurvey, $language = null, $options = array())
+    public function __construct($iSurvey, $language = null)
     {
         /* Must import viewHelper */
         Yii::import('application.helpers.viewHelper');
@@ -106,13 +105,12 @@ class surveyAnswers
     {
         $questionTable = Question::model()->tableName();
         $command = Yii::app()->db->createCommand()
-            ->select("qid,{{questions}}.language as language,{{groups}}.group_order, {{questions}}.question_order")
+            ->select("qid,{{groups}}.group_order, {{questions}}.question_order")
             ->from($questionTable)
-            ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
-            ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
+            ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
+            ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid ")
             ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
-            ->bindParam(":sid", $this->iSurvey, PDO::PARAM_INT)
-            ->bindParam(":language", $this->language, PDO::PARAM_STR);
+            ->bindParam(":sid", $this->iSurvey, PDO::PARAM_INT);
         $allQuestions = $command->query()->readAll();
         return $allQuestions;
     }
@@ -144,7 +142,7 @@ class surveyAnswers
      */
     public function questionAnswers($qid)
     {
-        $oQuestion = Question::model()->find("qid=:qid AND language=:language", array(":qid"=>$qid,":language"=>$this->language));
+        $oQuestion = Question::model()->find("qid=:qid", array(":qid"=>$qid));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -157,7 +155,7 @@ class surveyAnswers
             }
             return null;
         }
-        $language = $oQuestion->language;
+        $language = $this->language;
         $aColumnsInfo = array();
         $questionClass= Question::getQuestionClass($oQuestion->type);
         switch ($questionClass) {
@@ -179,7 +177,7 @@ class surveyAnswers
             case 'language':
                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid] = array(
                     'type' => 'answer',
-                    'answers'=>$this->getAnswers($oQuestion),
+                    'answers'=>$this->getAnswers($oQuestion, $language),
                 );
                 if ($oQuestion->type == "O") {
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment"] = array(
@@ -194,16 +192,16 @@ class surveyAnswers
             case 'array-flexible-row':
             case 'array-flexible-column':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array(
                             'type' => 'answer',
-                            'answers'=>$this->getAnswers($oQuestion),
+                            'answers'=>$this->getAnswers($oQuestion, $language),
                         );
                     }
                 }
@@ -211,20 +209,20 @@ class surveyAnswers
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0"] = array(
                             'type' => 'answer',
-                            'answers'=>$this->getAnswers($oQuestion),
+                            'answers'=>$this->getAnswers($oQuestion, $language),
                         );
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1"]=array(
                             'type'=>'answer',
-                            'answers'=>$this->getAnswers($oQuestion,1),
+                            'answers'=>$this->getAnswers($oQuestion, $language, 1),
                         );
                     }
                 }
@@ -236,10 +234,10 @@ class surveyAnswers
                 break;
             case 'numeric-multi':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -252,16 +250,16 @@ class surveyAnswers
             case 'multiple-opt':
             case 'multiple-opt-comments':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array(
                             'type' => 'checkbox',
-                            'answers'=>$this->getAnswers($oQuestion),
+                            'answers'=>$this->getAnswers($oQuestion, $language),
                         );
                         if ($questionClass=='multiple-opt-comments') {
                             $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title.'comment'] = array(
@@ -274,18 +272,18 @@ class surveyAnswers
             case 'array-multi-flexi':
             case 'array-multi-flexi-text':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=0",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title,question',
-                            'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                            'select'=>'title',
+                            'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
-                            'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                            'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
                         ));
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
@@ -305,10 +303,10 @@ class surveyAnswers
                 break;
             case 'multiple-short-txt':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -333,8 +331,8 @@ class surveyAnswers
                 }
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
-                        "qid=:qid and language=:language",
-                        array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language)
+                        "qid=:qid",
+                        array(":qid"=>$oQuestion->qid)
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
@@ -343,7 +341,7 @@ class surveyAnswers
                             . "<small>".sprintf(gT("Rank %s"), $count)."</small>";
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count] = array(
                         'type' => 'answer',
-                        'filter'=> $this->getAnswers($oQuestion),
+                        'filter'=> $this->getAnswers($oQuestion, $language),
                     );
                     $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count]=$oQuestion->title."_".$count;
                 }
@@ -388,12 +386,20 @@ class surveyAnswers
     /**
      * Get answer list in language, key are code
      * @param \Question
+     * @param string $language
      * @param integer $scale
      * @param boolean striped;
      * return array|false|null
      */
-    public static function getAnswers($oQuestion, $scale = 0, $strip = true)
+    public static function getAnswers($oQuestion, $language = null, $scale = 0, $strip = true)
     {
+        if(empty($language)) {
+            $oSurvey = Survey::model()->findByPk($oQuestion->sid);
+            if (!$oSurvey) {
+                throw new \CHttpException(404);
+            }
+            $language = $oSurvey->language;
+        }
         $questionClass= Question::getQuestionClass($oQuestion->type);
         switch ($questionClass) {
             case 'list-radio':
@@ -404,17 +410,18 @@ class surveyAnswers
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
             case 'ranking':
-                $answers = Answer::model()->findAll(array(
-                    'condition' => "qid=:qid and language=:language and scale_id=:scale",
+                $answers = Answer::model()->with('answerl10ns')->findAll(array(
+                    'condition' => "qid=:qid and scale_id=:scale",
                     'order'=> 'sortorder',
-                    'params' => array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language,":scale"=>$scale)
+                    'params' => array(":qid"=>$oQuestion->qid,":scale"=>$scale)
                 ));
-                if (!empty($answers)) {
-                    return CHtml::listData($answers, 'code', function ($answers) use ($strip) {
+                if (!empty($answers) && !empty($answers->answerl10ns[$language])) {
+                    return CHtml::listData($answers, 'code', function ($answers) use ($strip, $language) {
+                        $answertext = $answers->answerl10ns[$language]->answer;
                         if ($strip) {
-                            return strip_tags(viewHelper::purified($answers->answer));
+                            return strip_tags(viewHelper::purified($answertext));
                         }
-                        return viewHelper::purified($answers->answer);
+                        return viewHelper::purified($answertext);
                     });
                 }
                 if (self::allowOther($oQuestion->type) && $oQuestion->other=="Y") {

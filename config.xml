@@ -7,7 +7,7 @@
         <lastUpdate>2021-07-06</lastUpdate>
         <author>Denis Chenu</author>
         <authorUrl>https://sondages.pro</authorUrl>
-        <version>1.12.0-alpha</version>
+        <version>1.12.0-beta2</version>
         <license>GPL</license>
         <description><![CDATA[A tool for other plugins]]></description>
     </metadata>

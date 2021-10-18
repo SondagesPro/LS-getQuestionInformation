@@ -101,7 +101,6 @@ class surveyColumnsInformation
     {
         // First get all question
         $allQuestions = $this->allQuestions();
-        tracevar($allQuestions);
         $aColumnsToCode = array();
         foreach ($allQuestions as $aQuestion) {
             $aColumnsToCode = array_merge($aColumnsToCode, $this->questionColumns($aQuestion['qid']));
@@ -294,7 +293,7 @@ class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array_merge($aDefaultColumnInfo, array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title,
                             'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n),
-                            'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                            'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestionL10n->language.'")',
@@ -316,7 +315,7 @@ class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0"]=array_merge($aDefaultColumnInfo, array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0",
                             'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_1]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n) . CHtml::tag("small", array(), gT("SCale 1")),
-                            'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                            'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestionL10n->language.'",0)',
@@ -324,7 +323,7 @@ class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1"]=array_merge($aDefaultColumnInfo, array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1",
                             'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_2]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n) . CHtml::tag("small", array(), gT("SCale 2")),
-                            'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                            'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                             //~ 'filterInputOptions'=>array('multiple'=>true),
                             'type'=>'raw',
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestionL10n->language.'",1)',
@@ -376,7 +375,7 @@ class surveyColumnsInformation
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array_merge($aDefaultColumnInfo, array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title,
                             'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n),
-                            'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                            'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                             'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getCheckValue($data,$this,'.$oQuestion->qid.')',
                         ));
                         if ($questionClass=='multiple-opt-comments') {
@@ -452,7 +451,7 @@ class surveyColumnsInformation
                         'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid,
                         'header'=>CHTml::tag('strong', array(), "[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n),
                         'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getDateValue($data,$this,'.$oQuestion->qid.','.$oQuestion->sid.')',
-                        'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                        'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                     )
                 );
                 break;
@@ -477,7 +476,7 @@ class surveyColumnsInformation
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count] = array_merge($aDefaultColumnInfo, array(
                         'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count,
                         'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$count}]") . self::getExtraHtmlHeader($oQuestionL10n). "<small>".sprintf(gT("Rank %s"), $count)."</small>",
-                        'filter'=>$this->getFilter($oQuestion, 0, true, $language)),
+                        'filter'=>$this->getFilter($oQuestion, 0, true, $language),
                         'type'=>'raw',
                         'value'=>'\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,'.$oQuestion->qid.',"'.$oQuestion->type.'","'.$oQuestionL10n->language.'")',
                     ));
@@ -856,14 +855,13 @@ class surveyColumnsInformation
     {
         /* @TODO : add other */
         $questionClass= Question::getQuestionClass($oQuestion->type);
-        $oSurvey = ;
+        $oSurvey = Survey::model()->findByPk($oQuestion->sid);
         if (!$oSurvey) {
             throw new \CHttpException(404);
         }
-        if (empty($language) || !in_array($language, Survey::model()->findByPk($oQuestion->sid)->getAllLanguages())) {
-            $language = Survey::model()->findByPk($oQuestion->sid)->language;
+        if (empty($language)) {
+            $language = $oQuestion->language;
         }
-        return ['todo'=>'todo'];
         switch ($questionClass) {
             case 'list-radio':
             case 'list-with-comment':
@@ -878,18 +876,18 @@ class surveyColumnsInformation
                     'order'=> 'sortorder',
                     'params' => array(":qid"=>$oQuestion->qid,":scale"=>$scale, ":language"=>$language)
                 ));
-                //~ if (!empty($answers)) {
-                    //~ return CHtml::listData($answers, 'code', function ($answers) use ($strip) {
-                        //~ $
-                        //~ if ($strip) {
-                            //~ return strip_tags(viewHelper::purified($answers->answer));
-                        //~ }
-                        //~ return viewHelper::purified($answers->answer);
-                    //~ });
-                //~ }
-                //~ if (self::allowOther($oQuestion->type) && $oQuestion->other=="Y") {
-                    //~ $aAnswers['-oth']=gT('Other');
-                //~ }
+                if (!empty($answers) && !empty($answers->answerl10ns[$language])) {
+                    return CHtml::listData($answers, 'code', function ($answers) use ($strip, $language) {
+                        $answertext = $answers->answerl10ns[$language]->answer;
+                        if ($strip) {
+                            return strip_tags(viewHelper::purified($answertext));
+                        }
+                        return viewHelper::purified($answertext);
+                    });
+                }
+                if (self::allowOther($oQuestion->type) && $oQuestion->other=="Y") {
+                    $aAnswers['-oth']=gT('Other');
+                }
                 break;
             case 'choice-5-pt-radio':
             case 'array-5-pt':
