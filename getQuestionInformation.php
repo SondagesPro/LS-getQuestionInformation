@@ -72,7 +72,7 @@ class getQuestionInformation extends PluginBase {
         if(Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
             $aMenuItem = array(
                 'label' => 'Check question information',
-                'iconClass' => 'fa fa-list-alt ',
+                'iconClass' => 'fa fa-object-group ',
                 'href' => Yii::app()->createUrl(
                     'admin/pluginhelper',
                     array(

@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2020-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.1.1
+ * @version 0.1.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -338,9 +338,6 @@ class surveyAnswers
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
-                    $header = "<strong>[{$oQuestion->title}_{$count}]</strong>"
-                            . self::getExtraHtmlHeader($oQuestion)
-                            . "<small>".sprintf(gT("Rank %s"), $count)."</small>";
                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count] = array(
                         'type' => 'answer',
                         'filter'=> $this->getAnswers($oQuestion),
@@ -410,7 +407,7 @@ class surveyAnswers
                     'params' => array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language,":scale"=>$scale)
                 ));
                 if (!empty($answers)) {
-                    return CHtml::listData($answers, 'code', function ($answers) use ($strip) {
+                    $aAnswers = CHtml::listData($answers, 'code', function ($answers) use ($strip) {
                         if ($strip) {
                             return strip_tags(viewHelper::purified($answers->answer));
                         }
@@ -420,6 +417,7 @@ class surveyAnswers
                 if (self::allowOther($oQuestion->type) && $oQuestion->other=="Y") {
                     $aAnswers['-oth']=gT('Other');
                 }
+                return $aAnswers;
                 break;
             case 'choice-5-pt-radio':
             case 'array-5-pt':
