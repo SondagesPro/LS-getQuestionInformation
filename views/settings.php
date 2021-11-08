@@ -16,5 +16,10 @@
         <pre>
             <?php print_r($allQuestionAnswers); ?>
         </pre>
+        <h4>allQuestionListData</h4>
+        <code>$allQuestionListData  = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionListData($surveyId, null);</code>
+        <pre>
+            <?php print_r($allQuestionListData); ?>
+        </pre>
     </div>
 </div>

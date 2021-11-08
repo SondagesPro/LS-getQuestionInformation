@@ -47,10 +47,12 @@ class getQuestionInformation extends PluginBase {
         $columToCode = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
         $allQuestionsColumns = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionsColumns($surveyId, null, true);
         $allQuestionAnswers = \getQuestionInformation\helpers\surveyAnswers::getAllQuestionsAnswers($surveyId, null);
+        $allQuestionListData  = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionListData($surveyId, null);
         $aData = array(
             'columToCode' => $columToCode,
             'allQuestionsColumns' => $allQuestionsColumns,
-            'allQuestionAnswers' => $allQuestionAnswers
+            'allQuestionAnswers' => $allQuestionAnswers,
+            'allQuestionListData' => $allQuestionListData
         );
         $content = $this->renderPartial('settings', $aData, true);
         return $content;

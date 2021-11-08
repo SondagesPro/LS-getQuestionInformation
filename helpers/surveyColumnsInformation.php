@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.2
+ * @version 1.1.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -290,6 +290,9 @@ class surveyColumnsInformation
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $oSubQuestionL10n = QuestionL10n::model()->find("qid = :qid and language =:language", array(":qid"=>$oSubQuestion->qid, ":language" => $language));
+                        if(empty($oSubQuestionL10n)) {
+                            continue;
+                        }
                         $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title] = array_merge($aDefaultColumnInfo, array(
                             'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title,
                             'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n),
@@ -547,7 +550,13 @@ class surveyColumnsInformation
     {
         $ByEmCode = $this->ByEmCode;
         $language = $this->language;
-        $oQuestion = Question::model()->find("qid=:qid AND language=:language", array(":qid"=>$qid,":language"=>$this->language));
+        $oQuestion = Question::model()->find(
+            array(
+                'select' => "sid,gid,qid,title,parent_qid,type",
+                'condition' => "qid=:qid",
+                'params' => array(":qid"=>$qid)
+            )
+        );
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -560,7 +569,19 @@ class surveyColumnsInformation
             }
             return null;
         }
-        $language = $oQuestion->language;
+        $oQuestionL10n = QuestionL10n::model()->find(
+            array(
+                'select' => "qid,language,question",
+                'condition' => "qid = :qid and language =:language",
+                'params' => array(":qid"=>$qid, ":language" => $language)
+            )
+        );
+        if (!$oQuestionL10n) {
+            if (defined('YII_DEBUG') && YII_DEBUG) {
+                throw new Exception('Invalid language for question in getQuestionColumnToCode function.');
+            }
+            return null;
+        }
         $aListData = array(
             'data'=>array(),
             'options'=>array(),
@@ -588,22 +609,22 @@ class surveyColumnsInformation
                 if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
-                $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 60, '…', 0.6);
+                $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 60, '…', 0.6);
                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                    'data-content'=>viewHelper::purified($oQuestion->question),
+                    'data-content'=>viewHelper::purified($oQuestionL10n->question),
                     'data-title'=>$oQuestion->title,
-                    'title'=>viewHelper::flatEllipsizeText($oQuestion->question),
+                    'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question),
                 ));
                 if ($oQuestion->type == "O") {
                     $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment";
                     if ($ByEmCode) {
                         $key = $oQuestion->title."_comment";
                     }
-                    $aListData['data'][$key] = "[{$oQuestion->title}_comment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".gT("Comments");
+                    $aListData['data'][$key] = "[{$oQuestion->title}_comment] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") ".gT("Comments");
                     $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                        'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments"),
+                        'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.gT("Comments"),
                         'data-title'=>$oQuestion->title."_comment",
-                        'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments"),
+                        'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".gT("Comments"),
                     ));
                 }
                 break;
@@ -619,33 +640,43 @@ class surveyColumnsInformation
             case "P": // 'multiple-opt-comments';
             case "Q": // 'multiple-short-txt';
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'qid,title,parent_qid,question_order',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
+                        $oSubQuestionL10n = QuestionL10n::model()->find(
+                            array(
+                                'select' => "qid,language,question",
+                                'condition' => "qid = :qid and language =:language",
+                                'params' => array(":qid"=>$oSubQuestion->qid, ":language" => $language)
+                            )
+                        );
+                        if(empty($oSubQuestionL10n)) {
+                            continue;
+                        }
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title;
                         if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title;
                         }
-                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
+                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestionL10n->question, true, 40, '…', 0.6);
                         $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                            'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.viewHelper::purified($oSubQuestion->question),
+                            'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.viewHelper::purified($oSubQuestionL10n->question),
                             'data-title'=>$oQuestion->title."_".$oSubQuestion->title,
-                            'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
+                            'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".viewHelper::flatEllipsizeText($oSubQuestionL10n->question),
                         ));
                         if ($oQuestion->type == "P") {
                             $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."comment";
                             if ($ByEmCode) {
                                 $key = $oQuestion->title."_".$oSubQuestion->title."comment";
                             }
-                            $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}comment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Comments").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
+                            $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}comment] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") (".gT("Comments").") ".viewHelper::flatEllipsizeText($oSubQuestionL10n->question, true, 40, '…', 0.6);
                             $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                                'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments")."<hr>".viewHelper::purified($oSubQuestion->question),
+                                'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.gT("Comments")."<hr>".viewHelper::purified($oSubQuestionL10n->question),
                                 'data-title'=>$oQuestion->title."_".$oSubQuestion->title."comment",
-                                'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments")."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
+                                'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".gT("Comments")."\n".viewHelper::flatEllipsizeText($oSubQuestionL10n->question),
                             ));
                         }
                     }
@@ -653,32 +684,42 @@ class surveyColumnsInformation
                 break;
             case "1": // array-dual-scale
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'qid,title,parent_qid',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
+                        $oSubQuestionL10n = QuestionL10n::model()->find(
+                            array(
+                                'select' => "qid,language,question",
+                                'condition' => "qid = :qid and language =:language",
+                                'params' => array(":qid"=>$oSubQuestion->qid, ":language" => $language)
+                            )
+                        );
+                        if(empty($oSubQuestionL10n)) {
+                            continue;
+                        }
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0";
                         if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title."_0";
                         }
-                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_0] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Scale 1").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
+                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_0] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") (".gT("Scale 1").") ".viewHelper::flatEllipsizeText($oSubQuestionL10n->question, true, 40, '…', 0.6);
                         $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                            'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Scale 1").'<hr>'.viewHelper::purified($oSubQuestion->question),
+                            'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.gT("Scale 1").'<hr>'.viewHelper::purified($oSubQuestionL10n->question),
                             'data-title'=>$oQuestion->title."_".$oSubQuestion->title."_0",
-                            'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Scale 1")."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
+                            'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".gT("Scale 1")."\n".viewHelper::flatEllipsizeText($oSubQuestionL10n->question),
                         ));
                         $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1";
                         if ($ByEmCode) {
                             $key = $oQuestion->title."_".$oSubQuestion->title."_1";
                         }
-                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_1] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Scale 2").") ".viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6);
+                        $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestion->title}_1] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") (".gT("Scale 2").") ".viewHelper::flatEllipsizeText($oSubQuestionL10n->question, true, 40, '…', 0.6);
                         $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                            'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Scale 2").'<hr>'.viewHelper::purified($oSubQuestion->question),
+                            'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.gT("Scale 2").'<hr>'.viewHelper::purified($oSubQuestionL10n->question),
                             'data-title'=>$oQuestion->title."_".$oSubQuestion->title."_1",
-                            'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Scale 2")."\n".viewHelper::flatEllipsizeText($oSubQuestion->question),
+                            'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".gT("Scale 2")."\n".viewHelper::flatEllipsizeText($oSubQuestionL10n->question),
                         ));
                     }
                 }
@@ -687,30 +728,50 @@ class surveyColumnsInformation
             case ';':
             case ':':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=0",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
+                        $oSubQuestionYL10n = QuestionL10n::model()->find(
+                            array(
+                                'select' => "qid,language,question",
+                                'condition' => "qid = :qid and language =:language",
+                                'params' => array(":qid"=>$oSubQuestionY->qid, ":language" => $language)
+                            )
+                        );
+                        if(empty($oSubQuestionYL10n)) {
+                            continue;
+                        }
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title,question',
-                            'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                            'select'=>'qid,title,parent_qid,question_order',
+                            'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
                             'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
                         ));
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
+                                $oSubQuestionXL10n = QuestionL10n::model()->find(
+                                    array(
+                                        'select' => "qid,language,question",
+                                        'condition' => "qid = :qid and language =:language",
+                                        'params' => array(":qid"=>$oSubQuestionX->qid, ":language" => $language)
+                                    )
+                                );
+                                if(empty($oSubQuestionXL10n)) {
+                                    continue;
+                                }
                                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title;
                                 if ($ByEmCode) {
                                     $key = $oQuestion->title."_".$oSubQuestionY->title."_".$oSubQuestionX->title;
                                 }
-                                $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestionY->title}_{$oSubQuestionX->title}] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestionY->question, true, 40, '…', 0.6)." - ".viewHelper::flatEllipsizeText($oSubQuestionX->question, true, 40, '…', 0.6);
+                                $aListData['data'][$key] = "[{$oQuestion->title}_{$oSubQuestionY->title}_{$oSubQuestionX->title}] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") ".viewHelper::flatEllipsizeText($oSubQuestionYL10n->question, true, 40, '…', 0.6)." - ".viewHelper::flatEllipsizeText($oSubQuestionXL10n->question, true, 40, '…', 0.6);
                                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                                    'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.viewHelper::purified($oSubQuestionY->question).'<hr>'.viewHelper::purified($oSubQuestionX->question),
+                                    'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.viewHelper::purified($oSubQuestionYL10n->question).'<hr>'.viewHelper::purified($oSubQuestionXL10n->question),
                                     'data-title'=>$oQuestion->title.$oSubQuestionY->title."_".$oSubQuestionX->title,
-                                    'title'=>viewHelper::purified($oQuestion->question)."\n".viewHelper::flatEllipsizeText($oSubQuestionY->question)."\n".viewHelper::flatEllipsizeText($oSubQuestionX->question),
+                                    'title'=>viewHelper::purified($oQuestionL10n->question)."\n".viewHelper::flatEllipsizeText($oSubQuestionYL10n->question)."\n".viewHelper::flatEllipsizeText($oSubQuestionXL10n->question),
                                 ));
                             }
                         }
@@ -730,8 +791,8 @@ class surveyColumnsInformation
                 }
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
-                        "qid=:qid and language=:language",
-                        array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language)
+                        "qid=:qid",
+                        array(":qid"=>$oQuestion->qid)
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
@@ -739,11 +800,11 @@ class surveyColumnsInformation
                     if ($ByEmCode) {
                         $key = $oQuestion->title."_".$count;
                     }
-                    $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7)." (".sprintf(gT("Rank %s"), $count).")";
+                    $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] ".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7)." (".sprintf(gT("Rank %s"), $count).")";
                     $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                        'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.sprintf(gT("Rank %s"), $count),
+                        'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.sprintf(gT("Rank %s"), $count),
                         'data-title'=>$oQuestion->title."_".$count,
-                        'title'=>viewHelper::purified($oQuestion->question)."\n".sprintf(gT("Rank %s"), $count),
+                        'title'=>viewHelper::purified($oQuestionL10n->question)."\n".sprintf(gT("Rank %s"), $count),
                     ));
                 }
                 break;
@@ -752,18 +813,18 @@ class surveyColumnsInformation
                 if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
-                $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7);
+                $aListData['data'][$key] = "[{$oQuestion->title}] ".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7);
                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                    'data-content'=>viewHelper::purified($oQuestion->question),
+                    'data-content'=>viewHelper::purified($oQuestionL10n->question),
                     'data-title'=>$oQuestion->title,
-                    'title'=>viewHelper::purified($oQuestion->question),
+                    'title'=>viewHelper::purified($oQuestionL10n->question),
                 ));
                 $key = $key."_filecount";
-                $aListData['data'][$key] = "[{$oQuestion->title}_filecount] ".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7);
+                $aListData['data'][$key] = "[{$oQuestion->title}_filecount] ".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7);
                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                    'data-content'=>gT("File count")."<hr>".viewHelper::purified($oQuestion->question),
+                    'data-content'=>gT("File count")."<hr>".viewHelper::purified($oQuestionL10n->question),
                     'data-title'=>$oQuestion->title."_filecount",
-                    'title'=>gT("File count")."\n".viewHelper::purified($oQuestion->question),
+                    'title'=>gT("File count")."\n".viewHelper::purified($oQuestionL10n->question),
                 ));
                 break;
                 // Upload todo
@@ -779,22 +840,22 @@ class surveyColumnsInformation
             if ($ByEmCode) {
                 $key = $oQuestion->title."_other";
             }
-            $aListData['data'][$key] = "[{$oQuestion->title}_other] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") ".gT("Other");
+            $aListData['data'][$key] = "[{$oQuestion->title}_other] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") ".gT("Other");
             $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                'data-content'=>viewHelper::purified($oQuestion->question)."<hr>".gT("Other"),
+                'data-content'=>viewHelper::purified($oQuestionL10n->question)."<hr>".gT("Other"),
                 'data-title'=>$oQuestion->title."_other",
-                'title'=>viewHelper::purified($oQuestion->question)."\n".gT("Other"),
+                'title'=>viewHelper::purified($oQuestionL10n->question)."\n".gT("Other"),
             ));
             if ($oQuestion->type == "P") { /* Specific with comment … */
                 $key = $oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"."comment";
                 if ($ByEmCode) {
                     $key = $oQuestion->title."_other"."comment";
                 }
-                $aListData['data'][$key] = "[{$oQuestion->title}_othercomment] (".viewHelper::flatEllipsizeText($oQuestion->question, true, 30, '…', 0.7).") (".gT("Comments").") ".gT("Other");
+                $aListData['data'][$key] = "[{$oQuestion->title}_othercomment] (".viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7).") (".gT("Comments").") ".gT("Other");
                 $aListData['options'][$key] = array_merge($aDefaultOptions, array(
-                    'data-content'=>viewHelper::purified($oQuestion->question).'<hr>'.gT("Comments")."<hr>".gT("Other"),
+                    'data-content'=>viewHelper::purified($oQuestionL10n->question).'<hr>'.gT("Comments")."<hr>".gT("Other"),
                     'data-title'=>$oQuestion->title."_other"."comment",
-                    'title'=>viewHelper::flatEllipsizeText($oQuestion->question)."\n".gT("Comments")."\n".gT("Other"),
+                    'title'=>viewHelper::flatEllipsizeText($oQuestionL10n->question)."\n".gT("Comments")."\n".gT("Other"),
                 ));
             }
         }
@@ -876,9 +937,12 @@ class surveyColumnsInformation
                     'order'=> 'sortorder',
                     'params' => array(":qid"=>$oQuestion->qid,":scale"=>$scale, ":language"=>$language)
                 ));
-                if (!empty($answers) && !empty($answers->answerl10ns[$language])) {
-                    return CHtml::listData($answers, 'code', function ($answers) use ($strip, $language) {
-                        $answertext = $answers->answerl10ns[$language]->answer;
+                if (!empty($answers)) {
+                    return CHtml::listData($answers, 'code', function ($answer) use ($strip, $language) {
+                        if(empty($answer->answerl10ns[$language])) {
+                            return null;
+                        }
+                        $answertext = $answer->answerl10ns[$language]->answer;
                         if ($strip) {
                             return strip_tags(viewHelper::purified($answertext));
                         }
@@ -951,7 +1015,7 @@ class surveyColumnsInformation
         if (empty($data->$name)) {
             return "";
         }
-        $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid"=>$iQid,":language"=>$language));
+        $oQuestion = Question::model()->find("qid =:qid", array(":qid"=>$iQid));
         $questionClass= Question::getQuestionClass($type);
         switch ($questionClass) {
             case 'choice-5-pt-radio':
@@ -1104,7 +1168,7 @@ class surveyColumnsInformation
      */
     public function questionTypes($qid)
     {
-        $oQuestion = Question::model()->find("qid=:qid AND language=:language", array(":qid"=>$qid,":language"=>$this->language));
+        $oQuestion = Question::model()->find("qid=:qid", array(":qid"=>$qid));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -1118,7 +1182,6 @@ class surveyColumnsInformation
             return null;
         }
         $aColumnsInfo = array();
-        $language = $oQuestion->language;
         $aColumnsType = array();
         $questionClass= Question::getQuestionClass($oQuestion->type);
         /* Get is forced number */
@@ -1153,10 +1216,10 @@ class surveyColumnsInformation
             case 'array-flexible-row':
             case 'array-flexible-column':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -1167,10 +1230,10 @@ class surveyColumnsInformation
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale': // See https://github.com/LimeSurvey/LimeSurvey/commit/048cfdcbde78b3c60f2188378a36b210df3b24ab
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -1184,10 +1247,10 @@ class surveyColumnsInformation
                 break;
             case 'numeric-multi':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -1198,10 +1261,10 @@ class surveyColumnsInformation
             case 'multiple-opt':
             case 'multiple-opt-comments':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -1215,18 +1278,18 @@ class surveyColumnsInformation
             case 'array-multi-flexi':
             case 'array-multi-flexi-text':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=0",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title,question',
-                            'condition'=>"sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                            'select'=>'title',
+                            'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
-                            'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                            'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                         ));
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
@@ -1244,10 +1307,10 @@ class surveyColumnsInformation
                 break;
             case 'multiple-short-txt':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question',
-                    'condition'=>"sid=:sid and language=:language and parent_qid=:qid",
+                    'select'=>'title',
+                    'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                    'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                 ));
                 $type = 'text';
                 if (self::getAttribute($qid, 'numbers_only')) {
@@ -1272,8 +1335,8 @@ class surveyColumnsInformation
                 }
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
-                        "qid=:qid and language=:language",
-                        array(":qid"=>$oQuestion->qid,":language"=>$oQuestion->language)
+                        "qid=:qid",
+                        array(":qid"=>$oQuestion->qid)
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
