@@ -3,9 +3,9 @@
  * Description
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2019 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.2.0
+ * @version 1.2.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -195,12 +195,15 @@ Class surveyCodeHelper
         if(self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"]=$oQuestion->title."_other";
         }
-        if(self::haveComment($oQuestion->type)) {
+        if($oQuestion->type == 'P') {
             $aCommentColumns=array();
             foreach($aColumnsToCode as $column => $code) {
                 $aCommentColumns[$column."comment"] = $code."comment";
             }
             $aColumnsToCode = array_merge($aColumnsToCode,$aCommentColumns);
+        }
+        if($oQuestion->type == 'O') {
+            $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment"]=$oQuestion->title."_comment";
         }
         return $aColumnsToCode;
     }
