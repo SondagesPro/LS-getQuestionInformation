@@ -3,9 +3,9 @@
  * An helper to return answer type and list for a survey
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2020-2021 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2020-2022 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.2.2
+ * @version 1.12.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -407,9 +407,9 @@ class surveyAnswers
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
             case 'ranking':
-                $answers = Answer::model()->with('answerl10ns')->findAll(array(
+                $answers = Answer::model()->resetScope()->with('answerl10ns')->findAll(array(
                     'condition' => "qid=:qid and scale_id=:scale",
-                    'order'=> 'sortorder',
+                    'order'=> 'sortorder, code',
                     'params' => array(":qid"=>$oQuestion->qid,":scale"=>$scale)
                 ));
                 if (!empty($answers)) {

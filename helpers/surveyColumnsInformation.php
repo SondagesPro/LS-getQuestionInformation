@@ -3,9 +3,9 @@
  * Description
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2022 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.4
+ * @version 1.12.2
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -932,9 +932,9 @@ class surveyColumnsInformation
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
             case 'ranking':
-                $answers = Answer::model()->with('answerl10ns')->findAll(array(
+                $answers = Answer::model()->resetScope()->with('answerl10ns')->findAll(array(
                     'condition' => "qid=:qid and scale_id=:scale and language = :language",
-                    'order'=> 'sortorder',
+                    'order'=> 'sortorder, code',
                     'params' => array(":qid"=>$oQuestion->qid,":scale"=>$scale, ":language"=>$language)
                 ));
                 if (!empty($answers)) {
