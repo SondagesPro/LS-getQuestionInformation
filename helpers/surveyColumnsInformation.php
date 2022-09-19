@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2022 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.12.2
+ * @version 1.13.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,6 +26,7 @@ use Survey;
 
 use viewHelper;
 use CHtml;
+use CDbCriteria;
 use Question;
 use QuestionL10n;
 use QuestionAttribute;
@@ -38,7 +39,7 @@ class surveyColumnsInformation
     /**
      * The current api version of this file
      */
-    const apiversion=2;
+    const apiversion=2.1;
     /**
      * @var integer survey id
      */
@@ -48,9 +49,6 @@ class surveyColumnsInformation
      * @var string language
      */
     public $language;
-
-    /* WIP */
-    public $multipleSelect = false;
 
     /**
      * @var array|null
@@ -70,6 +68,12 @@ class surveyColumnsInformation
      * return EM code for title (currently only in listData), by default column value
      */
     public $ByEmCode = false;
+
+    /**
+     * @vra array
+     * restriction by question type, if empty all types
+     */
+    public $restrictToType = array();
 
     /**
      * constructor
@@ -102,8 +106,8 @@ class surveyColumnsInformation
         // First get all question
         $allQuestions = $this->allQuestions();
         $aColumnsToCode = array();
-        foreach ($allQuestions as $aQuestion) {
-            $aColumnsToCode = array_merge($aColumnsToCode, $this->questionColumns($aQuestion['qid']));
+        foreach ($allQuestions as $questionQid) {
+            $aColumnsToCode = array_merge($aColumnsToCode, $this->questionColumns($questionQid));
         }
         return $aColumnsToCode;
     }
@@ -124,15 +128,17 @@ class surveyColumnsInformation
 
     private function allQuestions()
     {
-        $questionTable = Question::model()->tableName();
-        $command = Yii::app()->db->createCommand()
-            ->select("qid,{{groups}}.group_order, {{questions}}.question_order")
-            ->from($questionTable)
-            ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
-            ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid")
-            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
-            ->bindParam(":sid", $this->iSurvey, PDO::PARAM_INT);
-        $allQuestions = $command->query()->readAll();
+        $oQuestionCriteria = new CDbCriteria();
+        /* Check with MSSQL if there are issue */
+        $oQuestionCriteria->select = "qid";
+        $oQuestionCriteria->condition = "t.sid = :sid and parent_qid = 0";
+        $oQuestionCriteria->params = array(":sid"=>$this->iSurvey);
+        $oQuestionCriteria->order = "group_order ASC, question_order ASC";
+        if (!empty($this->restrictToType)) {
+            $oQuestionCriteria->addInCondition("type", $this->restrictToType);
+        }
+        $oQuestions = Question::model()->with('group')->findAll($oQuestionCriteria);
+        $allQuestions = CHtml::listData($oQuestions, 'qid','qid');
         return $allQuestions;
     }
 
@@ -159,22 +165,22 @@ class surveyColumnsInformation
             'data'=>array(),
             'options'=>array(),
         );
-        foreach ($allQuestions as $aQuestion) {
-            $aListData = array_merge_recursive($aListData, $this->questionListData($aQuestion['qid']));
+        foreach ($allQuestions as $questionQid) {
+            $aListData = array_merge_recursive($aListData, $this->questionListData($questionQid));
         }
         return $aListData;
     }
 
     /**
-     * Get question for listData
-     * @return array[] : [$data,$option]
+     * Get question type
+     * @return string[] : [$column => $type]
      */
     public function allQuestionsType()
     {
         $allQuestions = $this->allQuestions();
         $aQuestionsType = array();
-        foreach ($allQuestions as $aQuestion) {
-            $aQuestionsType = array_merge($aQuestionsType, $this->questionTypes($aQuestion['qid']));
+        foreach ($allQuestions as $questionQid) {
+            $aQuestionsType = array_merge($aQuestionsType, $this->questionTypes($questionQid));
         }
         return $aQuestionsType;
     }

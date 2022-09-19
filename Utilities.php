@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.1.0
+ * @version 1.13.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,9 +22,9 @@ namespace getQuestionInformation;
 Class Utilities
 {
     /**
-     * @var float current api version of this file
+     * @var string current api version of this file
      */
-    const API = 1.12;
+    const API = "1.13";
 
     /**
      * @param integer $surveyId
