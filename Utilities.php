@@ -24,7 +24,7 @@ Class Utilities
     /**
      * @var string current api version of this file
      */
-    const API = "1.13";
+    const API = "1.13.0";
 
     /**
      * @param integer $surveyId
