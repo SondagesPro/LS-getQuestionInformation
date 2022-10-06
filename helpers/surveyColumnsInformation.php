@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2022 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.13.0
+ * @version 1.13.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -558,7 +558,7 @@ class surveyColumnsInformation
         $language = $this->language;
         $oQuestion = Question::model()->find(
             array(
-                'select' => "sid,gid,qid,title,parent_qid,type",
+                'select' => "sid,gid,qid,title,parent_qid,type,other",
                 'condition' => "qid=:qid",
                 'params' => array(":qid"=>$qid)
             )
@@ -734,7 +734,7 @@ class surveyColumnsInformation
             case ';':
             case ':':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -832,8 +832,6 @@ class surveyColumnsInformation
                     'data-title'=>$oQuestion->title."_filecount",
                     'title'=>gT("File count")."\n".viewHelper::purified($oQuestionL10n->question),
                 ));
-                break;
-                // Upload todo
                 break;
             default:
                 if(defined('YII_DEBUG') && YII_DEBUG && \Permission::model()->hasGlobalPermission('superadmin')) {
@@ -1222,7 +1220,7 @@ class surveyColumnsInformation
             case 'array-flexible-row':
             case 'array-flexible-column':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1236,7 +1234,7 @@ class surveyColumnsInformation
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale': // See https://github.com/LimeSurvey/LimeSurvey/commit/048cfdcbde78b3c60f2188378a36b210df3b24ab
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1253,7 +1251,7 @@ class surveyColumnsInformation
                 break;
             case 'numeric-multi':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1267,7 +1265,7 @@ class surveyColumnsInformation
             case 'multiple-opt':
             case 'multiple-opt-comments':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1284,7 +1282,7 @@ class surveyColumnsInformation
             case 'array-multi-flexi':
             case 'array-multi-flexi-text':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1292,7 +1290,7 @@ class surveyColumnsInformation
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title',
+                            'select'=>'qid,title',
                             'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
                             'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
@@ -1313,7 +1311,7 @@ class surveyColumnsInformation
                 break;
             case 'multiple-short-txt':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title',
+                    'select'=>'qid,title',
                     'condition'=>"sid=:sid and parent_qid=:qid",
                     'order'=>'question_order asc',
                     'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),

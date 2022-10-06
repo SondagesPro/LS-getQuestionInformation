@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.1.3
+ * @version 1.1.4
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -124,7 +124,7 @@ class surveyColumnsInformation
     {
         $questionTable = Question::model()->tableName();
         $command = Yii::app()->db->createCommand()
-            ->select("qid,{{questions}}.language as language,{{groups}}.group_order, {{questions}}.question_order")
+            ->select("qid,{{questions}}.language as language, group_order, question_order, other")
             ->from($questionTable)
             ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
             ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
