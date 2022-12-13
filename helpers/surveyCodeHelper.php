@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Description
  *
@@ -17,6 +18,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 namespace getQuestionInformation\helpers;
 use Yii;
 use PDO;
@@ -30,32 +32,46 @@ Class surveyCodeHelper
     /**
      * The current api version of this file
      */
-    const apiversion=1.2;
+    const apiversion = 1.2;
 
     /**
     /* Get an array with DB column name key and EM code for value or columns information
      * @param integer $iSurvey
-     * @param string $language @deprecated
+     * @param null $unused
      * @param boolean $default column (id, submitdate … )
      * @return null|array
      */
-    public static function getAllQuestions($iSurvey, $language = null, $default = false)
+    public static function getAllQuestions($iSurvey, $unused = null, $default = false)
     {
-        // First get all question
+        /* array[] keep it if need to do multiple times */
+        static $aQuestionsColumnsToCode = array();
+        // Check survey
         $oSurvey = Survey::model()->findByPk($iSurvey);
-        if(!$oSurvey) {
+        if (!$oSurvey) {
           return null;
         }
-        $questionTable = Question::model()->tableName();
-        $command = Yii::app()->db->createCommand()
-            ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
-            ->from($questionTable)
-            ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
-            ->join('{{question_l10ns}}', "{{question_l10ns}}.qid = {{questions}}.qid")
-            ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid")
-            ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
-            ->bindParam(":sid", $iSurvey, PDO::PARAM_INT);
-        $allQuestions = $command->query()->readAll();
+        if (!isset($staticQuestionsColumnsToCode[$iSurvey])) {
+            $questionTable = Question::model()->tableName();
+            $command = Yii::app()->db->createCommand()
+                ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
+                ->from($questionTable)
+                ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
+                ->join('{{question_l10ns}}', "{{question_l10ns}}.qid = {{questions}}.qid")
+                ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid")
+                ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
+                ->bindParam(":sid", $iSurvey, PDO::PARAM_INT);
+            $allQuestions = $command->query()->readAll();
+            $aQuestionsColumnsToCode = array();
+            foreach ($allQuestions as $aQuestion) {
+                $aQuestionsColumnsToCode = array_merge(
+                    $aQuestionsColumnsToCode,
+                    self::getQuestionColumn($aQuestion['qid'])
+                );
+            }
+            $staticQuestionsColumnsToCode[$iSurvey] = $aQuestionsColumnsToCode;
+        } else {
+            $aQuestionsColumnsToCode = $staticQuestionsColumnsToCode[$iSurvey];
+        }
         $aColumnsToCode = array();
         if($default) {
             $aColumnsToCode['id'] = 'id';
@@ -79,9 +95,10 @@ Class surveyCodeHelper
                 $aHeader['refurl'] = gT("Referrer URL");
             }
         }
-        foreach ($allQuestions as $aQuestion) {
-            $aColumnsToCode = array_merge($aColumnsToCode,self::getQuestionColumn($aQuestion['qid'],$language));
-        }
+        $aColumnsToCode = array_merge(
+            $aColumnsToCode,
+            $aQuestionsColumnsToCode
+        );
         return $aColumnsToCode;
     }
 
@@ -91,7 +108,7 @@ Class surveyCodeHelper
      * @throw Exception if debug
      * @return array|null
      */
-    public static function getQuestionColumn($qid, $language = null) {
+    public static function getQuestionColumn($qid) {
         $oQuestion = Question::model()->find("qid=:qid",array(":qid"=>$qid));
         if(!$oQuestion) {
             if(Yii::app()->getConfig('debug')>=2) {
@@ -190,7 +207,7 @@ Class surveyCodeHelper
                 // NUll
                 if(Yii::app()->getConfig('debug')>=2) {
                     throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
-                }  
+                }
         }
         if(self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
             $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"]=$oQuestion->title."_other";

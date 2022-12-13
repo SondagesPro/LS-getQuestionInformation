@@ -111,7 +111,7 @@ class surveyColumnsInformation
         }
         return $aColumnsToCode;
     }
-    
+
 
     /**
      * Static shortcut to self::allQuestionsColumns
@@ -202,7 +202,7 @@ class surveyColumnsInformation
         $surveyColumnsInformation = new self($oQuestion->sid, $language);
         return $surveyColumnsInformation->questionColumns($qid);
     }
-    
+
     /**
      * return array  with DB column name key and EM code for value for one question
      * @param integer $qid
@@ -418,7 +418,7 @@ class surveyColumnsInformation
                                 $oSubQuestionXL10n = QuestionL10n::model()->find("qid = :qid and language =:language", array(":qid"=>$oSubQuestionX->qid, ":language" => $language));
                                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = array_merge($aDefaultColumnInfo, array(
                                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title,
-                                    'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}__{$oSubQuestionY->title}_{$oSubQuestionX->title}]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionYL10n, $oSubQuestionXL10n),
+                                    'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestionY->title}_{$oSubQuestionX->title}]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionYL10n, $oSubQuestionXL10n),
                                 ));// No need to set decimal value since flexi is float
                                 if ($questionClass == 'array-multi-flexi-text') {
                                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = array_merge(
@@ -755,7 +755,7 @@ class surveyColumnsInformation
                             'select'=>'qid,title,parent_qid,question_order',
                             'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
                             'order'=>'question_order asc',
-                            'params'=>array(":sid"=>$oQuestion->sid,":language"=>$language,":qid"=>$oQuestion->qid),
+                            'params'=>array(":sid"=>$oQuestion->sid,":qid"=>$oQuestion->qid),
                         ));
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
@@ -1101,7 +1101,7 @@ class surveyColumnsInformation
         if (!empty($attributeDateFormat) && trim($attributeDateFormat->value)) {
             $dateFormat = getPHPDateFromDateFormat($attributeDateFormat->value);
         }
-        
+
         $datetimeobj = \DateTime::createFromFormat('!Y-m-d H:i:s', $dateValue);
         if ($datetimeobj) {
             $dateValue = $datetimeobj->format($dateFormat);

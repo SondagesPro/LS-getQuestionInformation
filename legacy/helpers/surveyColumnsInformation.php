@@ -105,7 +105,7 @@ class surveyColumnsInformation
         }
         return $aColumnsToCode;
     }
-    
+
 
     /**
      * Static shortcut to self::allQuestionsColumns
@@ -196,7 +196,7 @@ class surveyColumnsInformation
         $surveyColumnsInformation = new self($oQuestion->sid, $language);
         return $surveyColumnsInformation->questionColumns($qid);
     }
-    
+
     /**
      * return array  with DB column name key and EM code for value for one question
      * @param integer $qid
@@ -396,7 +396,7 @@ class surveyColumnsInformation
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = array_merge($aDefaultColumnInfo, array(
                                     'name'=>$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title,
-                                    'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}__{$oSubQuestionY->title}_{$oSubQuestionX->title}]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestionY, $oSubQuestionX),
+                                    'header'=> CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestionY->title}_{$oSubQuestionX->title}]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestionY, $oSubQuestionX),
                                 ));// No need to set decimal value since flexi is float
                                 if ($questionClass == 'array-multi-flexi-text') {
                                     $aColumnsInfo[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title] = array_merge(
@@ -1009,7 +1009,7 @@ class surveyColumnsInformation
         if (!empty($attributeDateFormat) && trim($attributeDateFormat->value)) {
             $dateFormat = getPHPDateFromDateFormat($attributeDateFormat->value);
         }
-        
+
         $datetimeobj = \DateTime::createFromFormat('!Y-m-d H:i:s', $dateValue);
         if ($datetimeobj) {
             $dateValue = $datetimeobj->format($dateFormat);

@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.12.0-beta2
+ * @version 1.12.0-beta3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -22,7 +22,7 @@ class getQuestionInformation extends PluginBase {
 
     static protected $description = 'A tool for other plugins';
     static protected $name = 'getQuestionInformation';
-    
+
     public function init() {
         if(App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink') ) {
             $this->subscribe('beforeToolsMenuRender');
