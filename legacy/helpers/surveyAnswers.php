@@ -391,6 +391,8 @@ class surveyAnswers
      */
     public static function getAnswers($oQuestion, $scale = 0, $strip = true)
     {
+        Yii::import('application.helpers.viewHelper');
+
         $questionClass= Question::getQuestionClass($oQuestion->type);
         switch ($questionClass) {
             case 'list-radio':

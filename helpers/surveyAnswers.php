@@ -390,6 +390,7 @@ class surveyAnswers
      */
     public static function getAnswers($oQuestion, $language = null, $scale = 0, $strip = true)
     {
+        Yii::import('application.helpers.viewHelper');
         if(empty($language)) {
             $oSurvey = Survey::model()->findByPk($oQuestion->sid);
             if (!$oSurvey) {
