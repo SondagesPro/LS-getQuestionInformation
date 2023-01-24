@@ -3,9 +3,9 @@
  * An helper to return answer type and list for a survey
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2020-2021 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2020-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 0.1.3
+ * @version 1.13.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -385,12 +385,18 @@ class surveyAnswers
     /**
      * Get answer list in language, key are code
      * @param \Question
+     * @param string|integer $language or  scale, here for compat with 5.X version
      * @param integer $scale
      * @param boolean striped;
      * return array|false|null
      */
-    public static function getAnswers($oQuestion, $scale = 0, $strip = true)
+    public static function getAnswers($oQuestion, $language = 0, $scale = true, $strip = true)
     {
+        /* Fix the params according to 5.X version */
+        if (!is_string($language) || ctype_digit($language)) {
+            $scale = $language;
+            $strip = $scale;
+        }
         Yii::import('application.helpers.viewHelper');
 
         $questionClass= Question::getQuestionClass($oQuestion->type);

@@ -5,7 +5,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2020-2022 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.12.2
+ * @version 1.13.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -396,6 +396,9 @@ class surveyAnswers
             if (!$oSurvey) {
                 throw new \CHttpException(404);
             }
+            $language = App()->getLanguage();
+        }
+        if (!in_array($language, $oSurvey->getAllLanguages()) {
             $language = $oSurvey->language;
         }
         $questionClass= Question::getQuestionClass($oQuestion->type);
