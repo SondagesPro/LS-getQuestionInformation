@@ -51,10 +51,9 @@ class surveyAnswers
      * constructor
      * @param integer survey id
      * @param string language
-     * @param array options
      * @throw error
      */
-    public function __construct($iSurvey, $language = null, $options = array())
+    public function __construct($iSurvey, $language = null)
     {
         /* Must import viewHelper */
         Yii::import('application.helpers.viewHelper');
@@ -386,14 +385,14 @@ class surveyAnswers
      * Get answer list in language, key are code
      * @param \Question
      * @param string|integer $language or  scale, here for compat with 5.X version
-     * @param integer $scale
+     * @param integer|boolean $scale or strip
      * @param boolean striped;
      * return array|false|null
      */
-    public static function getAnswers($oQuestion, $language = 0, $scale = true, $strip = true)
+    public static function getAnswers($oQuestion, $language = "", $scale = 0, $strip = true)
     {
-        /* Fix the params according to 5.X version */
-        if (!is_string($language) || ctype_digit($language)) {
+        /* Fix the params according to 5.X version : if languiage is an integer or ctype_digit : old function call*/
+        if (is_int($language) || ctype_digit($language)) {
             $scale = $language;
             $strip = $scale;
         }
@@ -409,6 +408,7 @@ class surveyAnswers
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
             case 'ranking':
+                $aAnswers = array();
                 $answers = Answer::model()->findAll(array(
                     'condition' => "qid=:qid and language=:language and scale_id=:scale",
                     'order'=> 'sortorder',
