@@ -3,9 +3,9 @@
  * Tool for others plugins
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 1.12.0-beta3
+ * @version 3.0;
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -18,21 +18,23 @@
  * GNU General Public License for more details.
  */
 
-class getQuestionInformation extends PluginBase {
+class getQuestionInformation extends PluginBase
+{
 
     static protected $description = 'A tool for other plugins';
     static protected $name = 'getQuestionInformation';
 
-    public function init() {
-        if(App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink') ) {
+    public function init()
+    {
+        if (App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink')) {
             $this->subscribe('beforeToolsMenuRender');
         }
         if (intval(App()->getConfig('versionnumber')) < 4) {
-            Yii::setPathOfAlias(get_class($this), dirname (__FILE__) . DIRECTORY_SEPARATOR . 'legacy');
+            Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy');
             App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
             return;
         }
-        Yii::setPathOfAlias(get_class($this), dirname (__FILE__));
+        Yii::setPathOfAlias(get_class($this), dirname(__FILE__));
         App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
     }
 
@@ -47,7 +49,7 @@ class getQuestionInformation extends PluginBase {
         $columToCode = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
         $allQuestionsColumns = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionsColumns($surveyId, null, true);
         $allQuestionAnswers = \getQuestionInformation\helpers\surveyAnswers::getAllQuestionsAnswers($surveyId, null);
-        $allQuestionListData  = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionListData($surveyId, null);
+        $allQuestionListData = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionListData($surveyId, null);
         $aData = array(
             'columToCode' => $columToCode,
             'allQuestionsColumns' => $allQuestionsColumns,
@@ -71,7 +73,7 @@ class getQuestionInformation extends PluginBase {
         $event = $this->getEvent();
         $surveyId = $event->get('surveyId');
         $oSurvey = Survey::model()->findByPk($surveyId);
-        if(Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
+        if (Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
             $aMenuItem = array(
                 'label' => 'Check question information',
                 'iconClass' => 'fa fa-object-group ',

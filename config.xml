@@ -4,12 +4,12 @@
         <name>getQuestionInformation</name>
         <type>plugin</type>
         <creationDate>2018-06-20</creationDate>
-        <lastUpdate>2022-02-07</lastUpdate>
+        <lastUpdate>2023-09-12</lastUpdate>
         <author>Denis Chenu</author>
         <authorUrl>https://sondages.pro</authorUrl>
-        <version>1.13.3-RC7</version>
+        <version>3.0.0</version>
         <license>GPL</license>
-        <description><![CDATA[A tool for other plugins]]></description>
+        <description><![CDATA[A tool for other plugins : allow to get question information on a fixed way]]></description>
     </metadata>
     <compatibility>
         <version>3</version>

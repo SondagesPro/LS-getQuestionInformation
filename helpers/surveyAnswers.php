@@ -398,7 +398,7 @@ class surveyAnswers
             }
             $language = App()->getLanguage();
         }
-        if (!in_array($language, $oSurvey->getAllLanguages()) {
+        if (!in_array($language, $oSurvey->getAllLanguages())) {
             $language = $oSurvey->language;
         }
         $questionClass= Question::getQuestionClass($oQuestion->type);
