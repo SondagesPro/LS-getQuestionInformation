@@ -7,7 +7,7 @@
         <lastUpdate>2023-09-12</lastUpdate>
         <author>Denis Chenu</author>
         <authorUrl>https://sondages.pro</authorUrl>
-        <version>3.0.0</version>
+        <version>3.0.0-beta2</version>
         <license>GPL</license>
         <description><![CDATA[A tool for other plugins : allow to get question information on a fixed way]]></description>
     </metadata>

@@ -1173,6 +1173,8 @@ class surveyColumnsInformation
         if (empty($data->$name)) {
             return "";
         }
+        /* @var array[] $aStaticAnswers to keep answers value get by DB during same page */
+        static $aStaticAnswers = [];
         $oQuestion = Question::model()->find("qid =:qid", array(":qid" => $iQid));
         $questionClass = Question::getQuestionClass($type);
         switch ($questionClass) {
@@ -1181,7 +1183,10 @@ class surveyColumnsInformation
             case 'array-10-pt':
                 return $data->$name;
             default:
-                $aAnswers = self::getFixedFilter($oQuestion, $scale, false, $language, false);
+                if (!isset($aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language])) {
+                    $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language] = self::getFixedFilter($oQuestion, $scale, false, $language, false);
+                }
+                $aAnswers = $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language];
                 if (isset($aAnswers[$data->$name])) {
                     $answer = $aAnswers[$data->$name];
                     return CHtml::tag("div", array('class' => 'answer-value'), "<code>[" . $data->$name . "]</code> " . viewHelper::purified($answer));
