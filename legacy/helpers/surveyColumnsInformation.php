@@ -1081,7 +1081,6 @@ class surveyColumnsInformation
         if (empty($data->$name)) {
             return "";
         }
-        return "FUCK";
         static $aStaticAnswers = [];
         $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
         $questionClass = Question::getQuestionClass($type);

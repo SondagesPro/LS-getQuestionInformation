@@ -391,11 +391,11 @@ class surveyAnswers
     public static function getAnswers($oQuestion, $language = null, $scale = 0, $strip = true)
     {
         Yii::import('application.helpers.viewHelper');
+        $oSurvey = Survey::model()->findByPk($oQuestion->sid);
+        if (!$oSurvey) {
+            throw new \CHttpException(404);
+        }
         if(empty($language)) {
-            $oSurvey = Survey::model()->findByPk($oQuestion->sid);
-            if (!$oSurvey) {
-                throw new \CHttpException(404);
-            }
             $language = App()->getLanguage();
         }
         if (!in_array($language, $oSurvey->getAllLanguages())) {
