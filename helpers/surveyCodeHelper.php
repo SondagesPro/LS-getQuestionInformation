@@ -6,7 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 1.2.2
+ * @version 1.2.3
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@
  */
 
 namespace getQuestionInformation\helpers;
+
 use Yii;
 use PDO;
 use Survey;
@@ -27,12 +28,18 @@ use Question;
 use QuestionAttribute;
 use Answer;
 
-Class surveyCodeHelper
+class surveyCodeHelper
 {
     /**
      * The current api version of this file
      */
     const apiversion = 1.2;
+
+    /* Set usage in static : all system use DB call a lot, need static */
+    /* null|array[] getAllQuestions function result */
+    private static $aAllQuestionsColumnsToCode = null;
+    /* null|array[] getQuestionColumn specific static */
+    private static $aQuestionsColumn = null;
 
     /**
     /* Get an array with DB column name key and EM code for value or columns information
@@ -43,14 +50,15 @@ Class surveyCodeHelper
      */
     public static function getAllQuestions($iSurvey, $unused = null, $default = false)
     {
-        /* array[] keep it if need to do multiple times */
-        static $aQuestionsColumnsToCode = array();
+        if (self::$aAllQuestionsColumnsToCode == null) {
+            self::$aAllQuestionsColumnsToCode = [];
+        }
         // Check survey
         $oSurvey = Survey::model()->findByPk($iSurvey);
         if (!$oSurvey) {
-          return null;
+            return null;
         }
-        if (!isset($staticQuestionsColumnsToCode[$iSurvey])) {
+        if (!isset(self::$aAllQuestionsColumnsToCode[$iSurvey])) {
             $questionTable = Question::model()->tableName();
             $command = Yii::app()->db->createCommand()
                 ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
@@ -68,12 +76,12 @@ Class surveyCodeHelper
                     self::getQuestionColumn($aQuestion['qid'])
                 );
             }
-            $staticQuestionsColumnsToCode[$iSurvey] = $aQuestionsColumnsToCode;
+            self::$aAllQuestionsColumnsToCode[$iSurvey] = $aQuestionsColumnsToCode;
         } else {
-            $aQuestionsColumnsToCode = $staticQuestionsColumnsToCode[$iSurvey];
+            $aQuestionsColumnsToCode = self::$aAllQuestionsColumnsToCode[$iSurvey];
         }
         $aColumnsToCode = array();
-        if($default) {
+        if ($default) {
             $aColumnsToCode['id'] = 'id';
             $aColumnsToCode['submitdate'] = 'submitdate';
             $aColumnsToCode['lastpage'] = 'lastpage';
@@ -81,18 +89,18 @@ Class surveyCodeHelper
             if (Yii::app()->getConfig('DBVersion') >= 290) {
                 $aColumnsToCode['seed'] = 'seed';
             }
-            if($oSurvey->anonymized != "Y") {
-                $aHeader['token'] = gT("Token");
+            if ($oSurvey->anonymized != "Y") {
+                $aColumnsToCode['token'] = 'token';
             }
-            if($oSurvey->datestamp == "Y") {
-                $aHeader['startdate'] = gT("Date started");
-                $aHeader['datestamp'] = gT("Date last action");
+            if ($oSurvey->datestamp == "Y") {
+                $aColumnsToCode['startdate'] = 'startdate';
+                $aColumnsToCode['datestamp'] = 'datestamp';
             }
-            if($oSurvey->ipaddr == "Y") {
-                $aHeader['ipaddr'] = gT("IP address");
+            if ($oSurvey->ipaddr == "Y") {
+                $aColumnsToCode['ipaddr'] = 'ipaddr';
             }
-            if($oSurvey->refurl == "Y") {
-                $aHeader['refurl'] = gT("Referrer URL");
+            if ($oSurvey->refurl == "Y") {
+                $aColumnsToCode['refurl'] = 'refurl';
             }
         }
         $aColumnsToCode = array_merge(
@@ -108,50 +116,59 @@ Class surveyCodeHelper
      * @throw Exception if debug
      * @return array|null
      */
-    public static function getQuestionColumn($qid) {
-        $oQuestion = Question::model()->find("qid=:qid",array(":qid"=>$qid));
-        if(!$oQuestion) {
-            if(Yii::app()->getConfig('debug')>=2) {
+    public static function getQuestionColumn($qid)
+    {
+        /* static part */
+        if (self::$aQuestionsColumn == null) {
+            self::$aQuestionsColumn = [];
+        }
+        if (isset(self::$aQuestionsColumn[$qid])) {
+            return self::$aQuestionsColumn[$qid];
+        }
+
+        $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
+        if (!$oQuestion) {
+            if (Yii::app()->getConfig('debug') >= 2) {
                 throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
-        if($oQuestion->parent_qid) {
-            if(Yii::app()->getConfig('debug')>=2) {
+        if ($oQuestion->parent_qid) {
+            if (Yii::app()->getConfig('debug') >= 2) {
                 throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
         $aColumnsToCode = array();
-        switch(self::getTypeFromType($oQuestion->type)) {
+        switch (self::getTypeFromType($oQuestion->type)) {
             case 'single':
-                $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid]=$oQuestion->title;
-                $aCurrent[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid]=$oQuestion->title;
+                $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = $oQuestion->title;
+                $aCurrent[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = $oQuestion->title;
                 break;
             case 'dual':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question_order',
-                    'condition'=>"sid=:sid and parent_qid=:qid",
-                    'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
+                    'select' => 'title,question_order',
+                    'condition' => "sid=:sid and parent_qid=:qid",
+                    'order' => 'question_order asc',
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
-                if($oSubQuestions) {
-                    foreach($oSubQuestions as $oSubQuestion) {
-                        $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#0"]=$oQuestion->title."_".$oSubQuestion->title."_0";
-                        $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title."#1"]=$oQuestion->title."_".$oSubQuestion->title."_1";
+                if ($oSubQuestions) {
+                    foreach ($oSubQuestions as $oSubQuestion) {
+                        $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0"] = $oQuestion->title . "_" . $oSubQuestion->title . "_0";
+                        $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1"] = $oQuestion->title . "_" . $oSubQuestion->title . "_1";
                     }
                 }
                 break;
             case 'sub':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select'=>'title,question_order',
-                    'condition'=>"sid=:sid and parent_qid=:qid",
-                    'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
+                    'select' => 'title,question_order',
+                    'condition' => "sid=:sid and parent_qid=:qid",
+                    'order' => 'question_order asc',
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
-                if($oSubQuestions) {
-                    foreach($oSubQuestions as $oSubQuestion) {
-                        $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestion->title]=$oQuestion->title."_".$oSubQuestion->title;
+                if ($oSubQuestions) {
+                    foreach ($oSubQuestions as $oSubQuestion) {
+                        $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = $oQuestion->title . "_" . $oSubQuestion->title;
                     }
                 }
                 break;
@@ -160,41 +177,41 @@ Class surveyCodeHelper
                     "qid = :qid AND attribute = 'max_subquestions'",
                     array(':qid' => $oQuestion->qid)
                 );
-                if($oQuestionAttribute) {
+                if ($oQuestionAttribute) {
                     $maxAnswers = intval($oQuestionAttribute->value);
                 }
-                if(empty($maxAnswers)) {
+                if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
                         "qid=:qid",
-                        array(":qid"=>$oQuestion->qid)
+                        array(":qid" => $oQuestion->qid)
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
-                    $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$count]=$oQuestion->title."_".$count;
+                    $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count] = $oQuestion->title . "_" . $count;
                 }
                 break;
             case 'upload':
-                $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid]=$oQuestion->title;
-                $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."_filecount"]=$oQuestion->title."_filecount";
+                $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = $oQuestion->title;
+                $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "_filecount"] = $oQuestion->title . "_filecount";
                 break;
             case 'double':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select'=>'title,question_order',
-                    'condition'=>"sid=:sid and parent_qid=:qid and scale_id=0",
-                    'order'=>'question_order asc',
-                    'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
+                    'select' => 'title,question_order',
+                    'condition' => "sid=:sid and parent_qid=:qid and scale_id=0",
+                    'order' => 'question_order asc',
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
-                if($oSubQuestionsY) {
-                    foreach($oSubQuestionsY as $oSubQuestionY) {
+                if ($oSubQuestionsY) {
+                    foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select'=>'title,question_order',
-                            'condition'=>"sid=:sid and parent_qid=:qid and scale_id=1",
-                            'order'=>'question_order asc',
-                            'params'=>array(":sid"=>$oQuestion->sid, ":qid"=>$oQuestion->qid),
+                            'select' => 'title,question_order',
+                            'condition' => "sid=:sid and parent_qid=:qid and scale_id=1",
+                            'order' => 'question_order asc',
+                            'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                         ));
-                        if($oSubQuestionsX) {
-                            foreach($oSubQuestionsX as $oSubQuestionX) {
-                                $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid.$oSubQuestionY->title."_".$oSubQuestionX->title]=$oQuestion->title."_".$oSubQuestionY->title."_".$oSubQuestionX->title;
+                        if ($oSubQuestionsX) {
+                            foreach ($oSubQuestionsX as $oSubQuestionX) {
+                                $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = $oQuestion->title . "_" . $oSubQuestionY->title . "_" . $oSubQuestionX->title;
                             }
                         }
                     }
@@ -205,23 +222,24 @@ Class surveyCodeHelper
                 break;
             default:
                 // NUll
-                if(Yii::app()->getConfig('debug')>=2) {
-                    throw new Exception(sprintf('Unknow question type %s.',$oQuestion->type));
+                if (Yii::app()->getConfig('debug') >= 2) {
+                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
         }
-        if(self::allowOther($oQuestion->type) and $oQuestion->other=="Y") {
-            $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."other"]=$oQuestion->title."_other";
+        if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
+            $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "other"] = $oQuestion->title . "_other";
         }
-        if($oQuestion->type == 'P') {
-            $aCommentColumns=array();
-            foreach($aColumnsToCode as $column => $code) {
-                $aCommentColumns[$column."comment"] = $code."comment";
+        if ($oQuestion->type == 'P') {
+            $aCommentColumns = array();
+            foreach ($aColumnsToCode as $column => $code) {
+                $aCommentColumns[$column . "comment"] = $code . "comment";
             }
-            $aColumnsToCode = array_merge($aColumnsToCode,$aCommentColumns);
+            $aColumnsToCode = array_merge($aColumnsToCode, $aCommentColumns);
         }
-        if($oQuestion->type == 'O') {
-            $aColumnsToCode[$oQuestion->sid."X".$oQuestion->gid.'X'.$oQuestion->qid."comment"]=$oQuestion->title."_comment";
+        if ($oQuestion->type == 'O') {
+            $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "comment"] = $oQuestion->title . "_comment";
         }
+        self::$aQuestionsColumn[$qid] = $aColumnsToCode;
         return $aColumnsToCode;
     }
     /**
@@ -229,7 +247,8 @@ Class surveyCodeHelper
      * @param string $type
      * @return string|null
      */
-    public static function getTypeFromType($type) {
+    public static function getTypeFromType($type)
+    {
         $questionTypeByType = array(
             "1" => 'dual',
             "5" => 'single',
@@ -262,7 +281,7 @@ Class surveyCodeHelper
             "*" => 'single',
             "X" => 'none', // 'single' can work too
         );
-        if(!isset($questionTypeByType[$type])) {
+        if (!isset($questionTypeByType[$type])) {
             return null;
         }
         return $questionTypeByType[$type];
@@ -272,15 +291,17 @@ Class surveyCodeHelper
      * @param string $type
      * return boolean
      */
-    public static function haveComment($type){
+    public static function haveComment($type)
+    {
         $haveComment = array('O','P');
-        return in_array($type,$haveComment);
+        return in_array($type, $haveComment);
     }
     /**
      * @param string $type
      * return boolean
      */
-    public static function allowOther($type){
+    public static function allowOther($type)
+    {
         $allowOther = array("L","!","P","M");
         return in_array($type, $allowOther);
     }

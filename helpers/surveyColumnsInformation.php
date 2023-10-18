@@ -1,11 +1,12 @@
 <?php
+
 /**
  * Description
  *
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 3.0
+ * @version 3.0.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,13 +18,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
 namespace getQuestionInformation\helpers;
 
 use Yii;
 use PDO;
 use Exception;
 use Survey;
-
 use viewHelper;
 use CHtml;
 use CDbCriteria;
@@ -1175,9 +1176,12 @@ class surveyColumnsInformation
         }
         /* @var array[] $aStaticAnswers to keep answers value get by DB during same page */
         static $aStaticAnswers = [];
-        $oQuestion = Question::model()->find("qid =:qid", array(":qid" => $iQid));
-        $questionClass = Question::getQuestionClass($type);
-        switch ($questionClass) {
+        static $aQuestionClass = [];
+        if (empty($aQuestionClass[$iQid])) {
+            $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
+            $aQuestionClass[$iQid] = Question::getQuestionClass($type);
+        }
+        switch ($aQuestionClass[$iQid]) {
             case 'choice-5-pt-radio':
             case 'array-5-pt':
             case 'array-10-pt':
@@ -1550,7 +1554,7 @@ class surveyColumnsInformation
      */
     private static function getAttribute($qid, $name)
     {
-        $AttributeCriteria = new \CDbCriteria;
+        $AttributeCriteria = new \CDbCriteria();
         $AttributeCriteria->select = 'value';
         $AttributeCriteria->compare('qid', $qid);
         $AttributeCriteria->compare('attribute', $name);
