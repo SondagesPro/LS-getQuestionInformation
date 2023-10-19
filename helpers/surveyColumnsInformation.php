@@ -1178,7 +1178,7 @@ class surveyColumnsInformation
         static $aStaticAnswers = [];
         static $aQuestionClass = [];
         if (empty($aQuestionClass[$iQid])) {
-            $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
+            $oQuestion = Question::model()->find("qid =:qid", array(":qid" => $iQid));
             $aQuestionClass[$iQid] = Question::getQuestionClass($type);
         }
         switch ($aQuestionClass[$iQid]) {
