@@ -1,22 +1,9 @@
 <?php
 
 /**
- * Description
- *
- * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2021 Denis Chenu <http://www.sondages.pro>
+ * This file is par of getQuestionInformation plugin
+ * @since 3.1.0 : function getColumnName
  * @license AGPL v3
- * @version 1.2.3
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  */
 
 namespace getQuestionInformation\helpers;
@@ -27,6 +14,7 @@ use Survey;
 use Question;
 use QuestionAttribute;
 use Answer;
+use Response;
 
 class surveyCodeHelper
 {
@@ -307,5 +295,48 @@ class surveyCodeHelper
     {
         $allowOther = array("L","!","P","M");
         return in_array($type, $allowOther);
+    }
+
+    /**
+     * Get the column name from expression manager code
+     * Except for comment colum
+     * @param integer $surveyId
+     * @param string $code
+     * @return string|null
+     */
+    public static function getColumnName($surveyId, $code)
+    {
+        if (tableExists('survey_' . $surveyId)) {
+            $availableColumns = Response::model($surveyId)->getAttributes();
+            if (array_key_exists($code, $availableColumns)) {
+                return $code;
+            }
+        }
+        $aCode = explode("_", $code);
+        $oQuestion = Question::model()->find([
+            'select' => ['sid', 'qid', 'title'],
+            'condition' => 'sid = :sid AND title = :title',
+            'params' => [':sid' => $surveyId, ':title' => $aCode[0]]
+        ]);
+        if (is_null($oQuestion)) {
+            return null;
+        }
+        $questionColumns = array_flip(self::getQuestionColumn($oQuestion->qid));
+        if (isset($questionColumns[$code])) {
+            return $questionColumns[$code];
+        }
+        if (!tableExists('survey_' . $surveyId)) {
+            $allQuestionColumns = self::getAllQuestions($surveyId, null, true);
+            /* core or real SGQA */
+            if (isset($allQuestionColumns[$code])) {
+                return $code;
+            }
+            $allQuestionColumns = array_flip($allQuestionColumns);
+            /* code to SGQA */
+            if (isset($allQuestionColumns[$code])) {
+                return $allQuestionColumns[$code];
+            }
+        }
+        return null;
     }
 }
