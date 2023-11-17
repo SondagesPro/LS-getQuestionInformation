@@ -6,7 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @version 3.0.1
+ * @version 3.2.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -232,7 +232,6 @@ class surveyColumnsInformation
             'htmlOptions' => array('class' => 'data-column column-' . $questionClass),
             'filterInputOptions' => array(
                 'class' => 'form-control input-sm filter-' . $questionClass,
-                //~ 'empty'=>gT("All"),
             ),
         );
         switch ($questionClass) {
@@ -1060,11 +1059,11 @@ class surveyColumnsInformation
      */
     public static function getFreeAnswerValue($data, $column)
     {
-        $name = $column->name;
-        if (empty($data->$name)) {
+        $value = self::getValue($data, $column);
+        if ($value === "") {
             return "";
         }
-        return CHtml::tag("div", array('class' => 'answer-value'), CHtml::encode($data->$name));
+        return CHtml::tag("div", array('class' => 'answer-value'), CHtml::encode($value));
     }
     /**
      * Summary of getAnswerValue
@@ -1078,8 +1077,8 @@ class surveyColumnsInformation
      */
     public static function getAnswerValue($data, $column, $iQid, $type, $language, $scale = 0)
     {
-        $name = $column->name;
-        if (empty($data->$name)) {
+        $value = self::getValue($data, $column);
+        if ($value === "") {
             return "";
         }
         static $aStaticAnswers = [];
@@ -1092,17 +1091,17 @@ class surveyColumnsInformation
             case 'choice-5-pt-radio':
             case 'array-5-pt':
             case 'array-10-pt':
-                return $data->$name;
+                return $value;
             default:
                 if (!isset($aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language])) {
                     $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language] = self::getFixedFilter($oQuestion, $scale, false, false);
                 }
                 $aAnswers = $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language];
-                if (isset($aAnswers[$data->$name])) {
-                    $answer = $aAnswers[$data->$name];
-                    return CHtml::tag("div", array('class' => 'answer-value'), "<code>[" . $data->$name . "]</code> " . viewHelper::purified($answer));
+                if (isset($aAnswers[$value])) {
+                    $answer = $aAnswers[$value];
+                    return CHtml::tag("div", array('class' => 'answer-value'), "<code>[" . $value . "]</code> " . viewHelper::purified($answer));
                 }
-                return CHtml::tag("div", array('class' => 'answer-value'), CHtml::encode($data->$name));
+                return CHtml::tag("div", array('class' => 'answer-value'), CHtml::encode($value));
         }
     }
 
@@ -1158,11 +1157,11 @@ class surveyColumnsInformation
     }
     public static function getDateValue($data, $column, $iQid, $surveyid)
     {
-        $name = $column->name;
-        if (is_null($data->$name) || $data->$name === "") {
-            return ""; // disable nullDisplay since no diff between null and not answered $data->$name;
+        $value = self::getValue($data, $column);
+        if ($value === "") {
+            return "";
         }
-        $dateValue = $data->$name;
+        $dateValue = $value;
         $dateFormatData = getDateFormatData(\SurveyLanguageSetting::model()->getDateFormat($surveyid, Yii::app()->getLanguage()));
         $dateFormat = $dateFormatData['phpdate'];
         $attributeDateFormat = QuestionAttribute::model()->find("qid = :qid and attribute = 'date_format'", array(":qid" => $iQid));
@@ -1177,27 +1176,24 @@ class surveyColumnsInformation
             $dateValue = '';
         }
         return $dateValue;
-        //~ $this->language;
     }
 
     public static function getDecimalValue($data, $column, $iQid)
     {
-        $name = $column->name;
-        $value = $data->$name;
-        if (is_null($data->$name) || $data->$name === "") {
-            return ""; // disable nullDisplay since no diff between null and not answered $data->$name;
+        $value = self::getValue($data, $column);
+        if ($value === "") {
+            return "";
         }
-        return floatval($data->$name); // Quickly done
+        return floatval($value); // Quickly done, loose some decimal
     }
 
     public static function getCheckValue($data, $column, $iQid)
     {
-        $name = $column->name;
-        $value = $data->$name;
-        if (is_null($data->$name)) {
+        $value = self::getValue($data, $column);
+        if ($value === "") {
             return "";
         }
-        return ($data->$name) ? gT("Yes") : ""; /* @todo : find filter for "" VS null */
+        return ($value) ? gT("Yes") : "";
     }
 
     public static function getFilterLanguage($surveyId)
@@ -1211,6 +1207,26 @@ class surveyColumnsInformation
     }
 
     /**
+     * return the value from a column with data
+     * to be used before in get answer function, check parent too
+     * @param self::model() data :
+     * @param string $column
+     * @return string|decimal|date|datetime
+     */
+    private static function getValue($data, $column)
+    {
+        $name = $column->name;
+        /* specific for relation */
+        if ($dotpos = strpos($name, ".")) {
+            /* Have a relation */
+            $related = substr($name, 0, $dotpos);
+            $name = substr($name, $dotpos + 1);
+            return $data->$related->$name ?? "";
+        }
+        return $data->$name ?? "";
+    }
+
+    /**
      * Get the header for question and subquestion
      * @param \Question
      * @param \Question|null first subquestion
@@ -1220,12 +1236,12 @@ class surveyColumnsInformation
      */
     public static function getExtraHtmlHeader($oQuestion, $oSubQuestion = null, $oSubXQuestion = null, $tag = 'small')
     {
-        $sExtraHtmlHeader = CHTml::tag($tag, array('title' => viewHelper::purified($oQuestion->question)), viewHelper::flatEllipsizeText($oQuestion->question, true, 40, '…', 0.6));
+        $sExtraHtmlHeader = CHTml::tag($tag, array('title' => viewHelper::purified(trim($oQuestion->question))), viewHelper::flatEllipsizeText(trim($oQuestion->question), true, 40, '…', 0.6));
         if ($oSubQuestion) {
-            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified($oSubQuestion->question)), viewHelper::flatEllipsizeText($oSubQuestion->question, true, 40, '…', 0.6));
+            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubQuestion->question))), viewHelper::flatEllipsizeText(trim($oSubQuestion->question), true, 40, '…', 0.6));
         }
         if ($oSubXQuestion) {
-            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified($oSubXQuestion->question)), viewHelper::flatEllipsizeText($oSubXQuestion->question, true, 40, '…', 0.6));
+            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubXQuestion->question))), viewHelper::flatEllipsizeText(trim($oSubXQuestion->question), true, 40, '…', 0.6));
         }
         return $sExtraHtmlHeader;
     }
