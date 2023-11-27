@@ -6,6 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
+ * @since 3.2.1 : fix getExtraHtmlHeader
  * @version 3.2.0
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1329,12 +1330,12 @@ class surveyColumnsInformation
      */
     public static function getExtraHtmlHeader($QuestionL10n, $oSubQuestionL10n = null, $oSubXQuestionL10n = null, $tag = 'small')
     {
-        $sExtraHtmlHeader = CHTml::tag($tag, array('title' => viewHelper::purified(trim($oQuestion->question))), viewHelper::flatEllipsizeText(trim($oQuestion->question), true, 40, '…', 0.6));
-        if ($oSubQuestion) {
-            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubQuestion->question))), viewHelper::flatEllipsizeText(trim($oSubQuestion->question), true, 40, '…', 0.6));
+        $sExtraHtmlHeader = CHTml::tag($tag, array('title' => viewHelper::purified(trim($QuestionL10n->question))), viewHelper::flatEllipsizeText(trim($QuestionL10n->question), true, 40, '…', 0.6));
+        if ($oSubQuestionL10n) {
+            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubQuestionL10n->question))), viewHelper::flatEllipsizeText(trim($oSubQuestionL10n->question), true, 40, '…', 0.6));
         }
-        if ($oSubXQuestion) {
-            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubXQuestion->question))), viewHelper::flatEllipsizeText(trim($oSubXQuestion->question), true, 40, '…', 0.6));
+        if ($oSubXQuestionL10n) {
+            $sExtraHtmlHeader .= CHTml::tag($tag, array('title' => viewHelper::purified(trim($oSubXQuestionL10n->question))), viewHelper::flatEllipsizeText(trim($oSubXQuestionL10n->question), true, 40, '…', 0.6));
         }
         return $sExtraHtmlHeader;
     }
