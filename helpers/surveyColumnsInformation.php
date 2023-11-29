@@ -352,7 +352,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1",
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_2]") . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n) . CHtml::tag("small", array(), gT("SCale 2")),
-                                'filter' => $this->getFilter($oQuestion, 0, true, $language),
+                                'filter' => $this->getFilter($oQuestion, 1, true, $language),
                                 //~ 'filterInputOptions'=>array('multiple'=>true),
                                 'type' => 'raw',
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestionL10n->language . '",1)',

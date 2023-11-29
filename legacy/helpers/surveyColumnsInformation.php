@@ -6,7 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
- * @since 3.2.2 : fix getAnswerValue
+ * @since 3.2.2 : fix getAnswerValue and dual scale
  * @version 3.2.0
  *
  * This program is free software: you can redistribute it and/or modify
@@ -339,7 +339,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1",
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_2]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestion) . CHtml::tag("small", array(), gT("SCale 2")),
-                                'filter' => $this->getFilter($oQuestion),
+                                'filter' => $this->getFilter($oQuestion, 1),
                                 //~ 'filterInputOptions'=>array('multiple'=>true),
                                 'type' => 'raw',
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestion->language . '",1)',
