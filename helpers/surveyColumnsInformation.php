@@ -6,6 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
+ * @since 3.2.2 : fix getAnswerValue
  * @since 3.2.1 : fix getExtraHtmlHeader
  * @version 3.2.0
  *
@@ -1188,6 +1189,9 @@ class surveyColumnsInformation
                 return $value;
             default:
                 if (!isset($aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language])) {
+                    if (!isset($oQuestion)) {
+                        $oQuestion = Question::model()->find("qid =:qid", array(":qid" => $iQid));
+                    }
                     $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language] = self::getFixedFilter($oQuestion, $scale, false, $language, false);
                 }
                 $aAnswers = $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language];

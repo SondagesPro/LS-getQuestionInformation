@@ -6,6 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
+ * @since 3.2.2 : fix getAnswerValue
  * @version 3.2.0
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1084,7 +1085,9 @@ class surveyColumnsInformation
         static $aStaticAnswers = [];
         static $aQuestionClass = [];
         if (empty($aQuestionClass[$iQid])) {
-            $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
+            if (!isset($oQuestion)) {
+                $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
+            }
             $aQuestionClass[$iQid] = Question::getQuestionClass($type);
         }
         switch ($aQuestionClass[$iQid]) {
@@ -1094,6 +1097,7 @@ class surveyColumnsInformation
                 return $value;
             default:
                 if (!isset($aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language])) {
+                    $oQuestion = Question::model()->find("qid =:qid AND language=:language", array(":qid" => $iQid, ":language" => $language));
                     $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language] = self::getFixedFilter($oQuestion, $scale, false, false);
                 }
                 $aAnswers = $aStaticAnswers['q' . $iQid]['s' . $scale]['lang' . $language];
