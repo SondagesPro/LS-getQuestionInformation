@@ -6,6 +6,7 @@
  * @author Denis Chenu <denis@sondages.pro>
  * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
  * @license AGPL v3
+ * @since 3.2.3 : Less SQL request
  * @since 3.2.2 : fix getAnswerValue and dual scale
  * @version 3.2.0
  *
@@ -295,6 +296,7 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $filter = $this->getFilter($oQuestion);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array_merge(
@@ -302,7 +304,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title,
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestion),
-                                'filter' => $this->getFilter($oQuestion),
+                                'filter' => $filter,
                                 //~ 'filterInputOptions'=>array('multiple'=>true),
                                 'type' => 'raw',
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestion->language . '")',
@@ -321,6 +323,8 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $filter0 = $this->getFilter($oQuestion, 0);
+                $filter1 = $this->getFilter($oQuestion, 1);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0"] = array_merge(
@@ -328,7 +332,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0",
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_1]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestion) . CHtml::tag("small", array(), gT("SCale 1")),
-                                'filter' => $this->getFilter($oQuestion),
+                                'filter' => $filter0,
                                 //~ 'filterInputOptions'=>array('multiple'=>true),
                                 'type' => 'raw',
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestion->language . '",0)',
@@ -339,7 +343,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1",
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_2]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestion) . CHtml::tag("small", array(), gT("SCale 2")),
-                                'filter' => $this->getFilter($oQuestion, 1),
+                                'filter' => $filter1,
                                 //~ 'filterInputOptions'=>array('multiple'=>true),
                                 'type' => 'raw',
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestion->language . '",1)',
@@ -392,6 +396,7 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $filter = $this->getFilter($oQuestion);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array_merge(
@@ -399,7 +404,7 @@ class surveyColumnsInformation
                             array(
                                 'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title,
                                 'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}]") . self::getExtraHtmlHeader($oQuestion, $oSubQuestion),
-                                'filter' => $this->getFilter($oQuestion),
+                                'filter' => $filter,
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getCheckValue($data,$this,' . $oQuestion->qid . ')',
                             )
                         );
@@ -425,16 +430,16 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $oSubQuestionsX = Question::model()->findAll(
+                    array(
+                        'select' => 'title,question',
+                        'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                        'order' => 'question_order asc',
+                        'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
+                    )
+                );
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
-                        $oSubQuestionsX = Question::model()->findAll(
-                            array(
-                                'select' => 'title,question',
-                                'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
-                                'order' => 'question_order asc',
-                                'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
-                            )
-                        );
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = array_merge(
@@ -508,6 +513,7 @@ class surveyColumnsInformation
                         )
                     );
                 }
+                $filter = $this->getFilter($oQuestion);
                 for ($count = 1; $count <= $maxAnswers; $count++) {
                     $header = "<strong>[{$oQuestion->title}_{$count}]</strong>"
                         . self::getExtraHtmlHeader($oQuestion)
@@ -517,7 +523,7 @@ class surveyColumnsInformation
                         array(
                             'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count,
                             'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$count}]") . self::getExtraHtmlHeader($oQuestion) . "<small>" . sprintf(gT("Rank %s"), $count) . "</small>",
-                            'filter' => $this->getFilter($oQuestion),
+                            'filter' => $filter,
                             'type' => 'raw',
                             'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestion->language . '")',
                         )
@@ -758,16 +764,16 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $oSubQuestionsX = Question::model()->findAll(
+                    array(
+                        'select' => 'title,question',
+                        'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                        'order' => 'question_order asc',
+                        'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
+                    )
+                );
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
-                        $oSubQuestionsX = Question::model()->findAll(
-                            array(
-                                'select' => 'title,question',
-                                'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
-                                'order' => 'question_order asc',
-                                'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
-                            )
-                        );
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title;
@@ -1386,16 +1392,16 @@ class surveyColumnsInformation
                         'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
                     )
                 );
+                $oSubQuestionsX = Question::model()->findAll(
+                    array(
+                        'select' => 'title,question',
+                        'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                        'order' => 'question_order asc',
+                        'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
+                    )
+                );
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
-                        $oSubQuestionsX = Question::model()->findAll(
-                            array(
-                                'select' => 'title,question',
-                                'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
-                                'order' => 'question_order asc',
-                                'params' => array(":sid" => $oQuestion->sid, ":language" => $language, ":qid" => $oQuestion->qid),
-                            )
-                        );
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = 'text';
