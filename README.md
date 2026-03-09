@@ -4,10 +4,9 @@ A collections of tools for opther plugin : have information about all questions 
 
 This plugin is compatible with version 2.73 and 3.22 of LimeSurvey, can be test on any other 2.X and 3.X version.
 
-**This plugin is not compatible with LimeSurvey 4.X version**
+This plugin is not tested with LimeSurvey 4.X version.
 
-**This plugin is currently on Release Candidate for 5.X version**
-
+**This plugin is not compatible with LimeSurvey 7 version**
 
 ## Installation
 
