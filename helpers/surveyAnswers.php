@@ -351,7 +351,7 @@ class surveyAnswers
                             'type' => 'answer',
                             'filter' => $this->getAnswers($oQuestion, $language),
                         );
-                        if ($maxAnswers >= $count) {
+                        if ($count >= $maxAnswers) {
                             break;
                         }
                         $count++;
@@ -377,7 +377,9 @@ class surveyAnswers
                 'type' => "freetext",
             );
             if ($oQuestion->type == "P") { /* Specific with comment … */
-                $aColumnsInfo['X' . $oQuestion->qid . '_Cothercomment'] = array(
+                $aColumnsInfo['Q' . $oQuestion->qid . '_Cothercomment'] = array(
+                    'type' => "freetext",
+                );
                     'type' => "freetext",
                 );
             }

@@ -551,7 +551,7 @@ class surveyColumnsInformation
                                 'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestion->type . '","' . $oQuestionL10n->language . '")',
                             )
                         );
-                        if ($maxAnswers >= $count) {
+                        if ($count >= $maxAnswers) {
                             break;
                         }
                         $count++;
@@ -567,20 +567,20 @@ class surveyColumnsInformation
                     $url['params'] = array();
                 }
                 $url = base64_encode(json_encode($url));
-                $aColumnsInfo['Q_' . $oQuestion->qid] = array_merge(
+                $aColumnsInfo['Q' . $oQuestion->qid] = array_merge(
                     $aDefaultColumnInfo,
                     array(
-                        'name' => 'Q_' . $oQuestion->qid,
+                        'name' => 'Q' . $oQuestion->qid,
                         'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n),
                         'sortable' => false,
                         'type' => 'raw',
                         'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getUploadAnswerValue($data,$this,' . $oQuestion->qid . ',"' . $url . '")',
                     )
                 );
-                $aColumnsInfo['Q_' . $oQuestion->qid . '_Cfilecount'] = array_merge(
+                $aColumnsInfo['Q' . $oQuestion->qid . '_Cfilecount'] = array_merge(
                     $aDefaultColumnInfo,
                     array(
-                        'name' => 'Q_' . $oQuestion->qid . '_Cfilecount',
+                        'name' => 'Q' . $oQuestion->qid . '_Cfilecount',
                         'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}]") . CHTml::tag('small', array(), gT("File count")),
                     )
                 );
@@ -1015,7 +1015,7 @@ class surveyColumnsInformation
     {
         $questionClass = Question::getQuestionClass($oQuestion->type);
         if ($questionClass == "date") {
-            return $this->getDateFilter('Q_' . $oQuestion->qid, $oQuestion->qid);
+            return $this->getDateFilter('Q' . $oQuestion->qid, $oQuestion->qid);
         }
         return self::getFixedFilter($oQuestion, $scale, $strip, $language);
     }
@@ -1120,6 +1120,7 @@ class surveyColumnsInformation
                 }
                 return $aAnswers;
             case 'ranking':
+                $aAnswers = array();
                 $answers = Question::model()->resetScope()->with('questionl10ns')->findAll(
                     array(
                     'condition' => "sid=:sid and parent_qid=:qid and language=:language",

@@ -1054,6 +1054,7 @@ class surveyColumnsInformation
                 if ($bycategory && $separatorAttribute) {
                     $separator = trim($separatorAttribute->value);
                 }
+                $aAnswers = array();
                 if (!empty($answers)) {
                     if ($separator) {
                         $aAnswers = CHtml::listData(
@@ -1106,6 +1107,9 @@ class surveyColumnsInformation
                         );
                     }
                 }
+                $aAnswers = array_filter($aAnswers, static function ($answer) {
+                    return $answer !== null;
+                });
                 if (self::allowOther($oQuestion->type) && $oQuestion->other == "Y") {
                     $aAnswers['-oth-'] = gT('Other');
                 }

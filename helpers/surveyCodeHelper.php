@@ -184,7 +184,7 @@ class surveyCodeHelper
                     $count = 1;
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsToCode['Q' . $oQuestion->qid  . '_S' . $oSubQuestion->qid] = $oQuestion->title . "_" . $count;
-                        if ($maxAnswers >= $count) {
+                        if ($count >= $maxAnswers) {
                             break;
                         }
                         $count++;
@@ -238,7 +238,7 @@ class surveyCodeHelper
             $aColumnsToCode = array_merge($aColumnsToCode, $aCommentColumns);
         }
         if ($oQuestion->type == 'O') {
-            $aColumnsToCode['X' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "_comment";
+            $aColumnsToCode['Q' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "_comment";
         }
         self::$aQuestionsColumn[$qid] = $aColumnsToCode;
         return $aColumnsToCode;

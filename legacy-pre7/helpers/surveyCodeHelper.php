@@ -312,13 +312,17 @@ class surveyCodeHelper
         $aCode = explode("_", $code);
         $oQuestion = Question::model()->find([
             'select' => ['sid', 'qid', 'title'],
-            'condition' => 'sid = :sid AND title = :title',
+            'condition' => 'sid = :sid AND title = :title AND parent_qid = 0',
             'params' => [':sid' => $surveyId, ':title' => $aCode[0]]
         ]);
         if (is_null($oQuestion)) {
             return null;
         }
-        $questionColumns = array_flip(self::getQuestionColumn($oQuestion->qid));
+        $columns = self::getQuestionColumn($oQuestion->qid);
+        if (!is_array($columns)) {
+            return null;
+        }
+        $questionColumns = array_flip($columns);
         if (isset($questionColumns[$code])) {
             return $questionColumns[$code];
         }

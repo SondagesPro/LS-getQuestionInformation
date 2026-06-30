@@ -417,6 +417,7 @@ class surveyAnswers
                     'order' => 'sortorder, code',
                     'params' => array(":qid" => $oQuestion->qid,":scale" => $scale)
                 ));
+                $aAnswers = array();
                 if (!empty($answers)) {
                     $aAnswers = CHtml::listData($answers, 'code', function ($answer) use ($strip, $language) {
                         if (empty($answer->answerl10ns[$language])) {
@@ -429,9 +430,11 @@ class surveyAnswers
                         return viewHelper::purified($answertext);
                     });
                 }
-                $aAnswers = array_filter($aAnswers); /* Remove invalid answers (no l10n) */
+                $aAnswers = array_filter($aAnswers, static function ($answer) {
+                    return $answer !== null;
+                }); /* Remove invalid answers (no l10n) */
                 if (self::allowOther($oQuestion->type) && $oQuestion->other == "Y") {
-                    $aAnswers['-oth'] = gT('Other');
+                    $aAnswers['-oth-'] = gT('Other');
                 }
                 return $aAnswers;
                 break;
