@@ -677,7 +677,7 @@ class surveyColumnsInformation
             case "Y": // yes-no
             case "!": // list-dropdown
             case "*": // equation
-                $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid;
+                $key = 'Q' . $oQuestion->qid;
                 if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
@@ -691,7 +691,7 @@ class surveyColumnsInformation
                     )
                 );
                 if ($oQuestion->type == "O") {
-                    $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "comment";
+                    $key = 'Q' . $oQuestion->qid . "_Ccomment";
                     if ($ByEmCode) {
                         $key = $oQuestion->title . "_comment";
                     }
@@ -737,7 +737,7 @@ class surveyColumnsInformation
                         if (empty($oSubQuestionL10n)) {
                             continue;
                         }
-                        $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title;
+                        $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid;
                         if ($ByEmCode) {
                             $key = $oQuestion->title . "_" . $oSubQuestion->title;
                         }
@@ -751,7 +751,7 @@ class surveyColumnsInformation
                             )
                         );
                         if ($oQuestion->type == "P") {
-                            $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "comment";
+                            $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . '_Ccomment';
                             if ($ByEmCode) {
                                 $key = $oQuestion->title . "_" . $oSubQuestion->title . "comment";
                             }
@@ -789,7 +789,7 @@ class surveyColumnsInformation
                         if (empty($oSubQuestionL10n)) {
                             continue;
                         }
-                        $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0";
+                        $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . "#0";
                         if ($ByEmCode) {
                             $key = $oQuestion->title . "_" . $oSubQuestion->title . "_0";
                         }
@@ -802,7 +802,7 @@ class surveyColumnsInformation
                                 'title' => viewHelper::flatEllipsizeText($oQuestionL10n->question) . "\n" . gT("Scale 1") . "\n" . viewHelper::flatEllipsizeText($oSubQuestionL10n->question),
                             )
                         );
-                        $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1";
+                        $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . "#1";
                         if ($ByEmCode) {
                             $key = $oQuestion->title . "_" . $oSubQuestion->title . "_1";
                         }
@@ -861,7 +861,7 @@ class surveyColumnsInformation
                                 if (empty($oSubQuestionXL10n)) {
                                     continue;
                                 }
-                                $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title;
+                                $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestionY->qid . '_S' . $oSubQuestionX->qid;
                                 if ($ByEmCode) {
                                     $key = $oQuestion->title . "_" . $oSubQuestionY->title . "_" . $oSubQuestionX->title;
                                 }
@@ -891,31 +891,42 @@ class surveyColumnsInformation
                     $maxAnswers = intval($oQuestionAttribute->value);
                 }
                 if (empty($maxAnswers)) {
-                    $maxAnswers = intval(
-                        Answer::model()->count(
-                            "qid=:qid",
-                            array(":qid" => $oQuestion->qid)
-                        )
-                    );
+                    $maxAnswers = intval(Question::model()->count(
+                        "parent_qid=:qid",
+                        array(":qid" => $oQuestion->qid)
+                    ));
                 }
-                for ($count = 1; $count <= $maxAnswers; $count++) {
-                    $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count;
-                    if ($ByEmCode) {
-                        $key = $oQuestion->title . "_" . $count;
+                $oSubQuestions = Question::model()->findAll(array(
+                    'select' => 'title,qid,question_order',
+                    'condition' => "sid=:sid and parent_qid=:qid",
+                    'order' => 'question_order asc',
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
+                ));
+                if ($oSubQuestions) {
+                    $count = 1;
+                    foreach ($oSubQuestions as $oSubQuestion) {
+                        $key = 'Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid;
+                        if ($ByEmCode) {
+                            $key = $oQuestion->title . "_" . $count;
+                        }
+                        $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] " . viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7) . " (" . sprintf(gT("Rank %s"), $count) . ")";
+                        $aListData['options'][$key] = array_merge(
+                            $aDefaultOptions,
+                            array(
+                                'data-content' => viewHelper::purified($oQuestionL10n->question) . '<hr>' . sprintf(gT("Rank %s"), $count),
+                                'data-title' => $oQuestion->title . "_" . $count,
+                                'title' => viewHelper::purified($oQuestionL10n->question) . "\n" . sprintf(gT("Rank %s"), $count),
+                            )
+                        );
+                        if ($count >= $maxAnswers) {
+                            break;
+                        }
+                        $count++;
                     }
-                    $aListData['data'][$key] = "[{$oQuestion->title}_{$count}] " . viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7) . " (" . sprintf(gT("Rank %s"), $count) . ")";
-                    $aListData['options'][$key] = array_merge(
-                        $aDefaultOptions,
-                        array(
-                            'data-content' => viewHelper::purified($oQuestionL10n->question) . '<hr>' . sprintf(gT("Rank %s"), $count),
-                            'data-title' => $oQuestion->title . "_" . $count,
-                            'title' => viewHelper::purified($oQuestionL10n->question) . "\n" . sprintf(gT("Rank %s"), $count),
-                        )
-                    );
                 }
                 break;
             case '|': // Upload
-                $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid;
+                $key = 'Q' . $oQuestion->qid;
                 if ($ByEmCode) {
                     $key = $oQuestion->title;
                 }
@@ -928,7 +939,10 @@ class surveyColumnsInformation
                         'title' => viewHelper::purified($oQuestionL10n->question),
                     )
                 );
-                $key = $key . "_filecount";
+                $key = 'Q' . $oQuestion->qid . "_Cfilecount";
+                if ($ByEmCode) {
+                    $key = $oQuestion->title . "_filecount";
+                }
                 $aListData['data'][$key] = "[{$oQuestion->title}_filecount] " . viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7);
                 $aListData['options'][$key] = array_merge(
                     $aDefaultOptions,
@@ -946,7 +960,7 @@ class surveyColumnsInformation
             /* Nothing to do */
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
-            $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "other";
+            $key = 'Q' . $oQuestion->qid . "_Cother";
             if ($ByEmCode) {
                 $key = $oQuestion->title . "_other";
             }
@@ -960,7 +974,7 @@ class surveyColumnsInformation
                 )
             );
             if ($oQuestion->type == "P") { /* Specific with comment … */
-                $key = $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "other" . "comment";
+                $key = 'Q' . $oQuestion->qid . '_Cothercomment';
                 if ($ByEmCode) {
                     $key = $oQuestion->title . "_other" . "comment";
                 }
