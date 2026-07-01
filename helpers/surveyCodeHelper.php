@@ -123,7 +123,7 @@ class surveyCodeHelper
         }
         if ($oQuestion->parent_qid) {
             if (Yii::app()->getConfig('debug') >= 2) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -224,7 +224,7 @@ class surveyCodeHelper
             default:
                 // NUll
                 if (Yii::app()->getConfig('debug') >= 2) {
-                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
+                    throw new \Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
@@ -233,12 +233,12 @@ class surveyCodeHelper
         if ($oQuestion->type == 'P') {
             $aCommentColumns = array();
             foreach ($aColumnsToCode as $column => $code) {
-                $aCommentColumns[$column . "comment"] = $code . '_Ccomment';
+                $aCommentColumns[$column . "_Ccommen"] = $code . 'comment';
             }
             $aColumnsToCode = array_merge($aColumnsToCode, $aCommentColumns);
         }
         if ($oQuestion->type == 'O') {
-            $aColumnsToCode['Q' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "_comment";
+            $aColumnsToCode['Q' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "comment";
         }
         self::$aQuestionsColumn[$qid] = $aColumnsToCode;
         return $aColumnsToCode;

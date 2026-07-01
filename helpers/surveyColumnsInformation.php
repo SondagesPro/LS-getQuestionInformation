@@ -196,7 +196,7 @@ class surveyColumnsInformation
         $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
@@ -215,13 +215,13 @@ class surveyColumnsInformation
         $oQuestion = Question::model()->findByPk($qid);
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
         if ($oQuestion->parent_qid) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -229,7 +229,7 @@ class surveyColumnsInformation
         $oQuestionL10n = QuestionL10n::model()->find("qid = :qid and language =:language", array(":qid" => $qid, ":language" => $language));
         if (!$oQuestionL10n) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid language for question in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid language for question in getQuestionColumnToCode function.');
             }
             return null;
         }
@@ -631,13 +631,13 @@ class surveyColumnsInformation
         );
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
         if ($oQuestion->parent_qid) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -650,7 +650,7 @@ class surveyColumnsInformation
         );
         if (!$oQuestionL10n) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid language for question in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid language for question in getQuestionColumnToCode function.');
             }
             return null;
         }
@@ -941,7 +941,7 @@ class surveyColumnsInformation
                 break;
             default:
                 if (defined('YII_DEBUG') && YII_DEBUG && \Permission::model()->hasGlobalPermission('superadmin')) {
-                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
+                    throw new \Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
             /* Nothing to do */
         }
@@ -1399,13 +1399,13 @@ class surveyColumnsInformation
         $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
         if ($oQuestion->parent_qid) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -1596,7 +1596,7 @@ class surveyColumnsInformation
                 break;
             default:
                 if (defined('YII_DEBUG') && YII_DEBUG && \Permission::model()->hasGlobalPermission('superadmin')) {
-                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
+                    throw new \Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
             /* Nothing to do */
         }

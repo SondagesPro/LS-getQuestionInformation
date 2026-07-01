@@ -123,7 +123,7 @@ class surveyCodeHelper
         }
         if ($oQuestion->parent_qid) {
             if (Yii::app()->getConfig('debug') >= 2) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -211,7 +211,7 @@ class surveyCodeHelper
             default:
                 // NUll
                 if (Yii::app()->getConfig('debug') >= 2) {
-                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
+                    throw new \Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
