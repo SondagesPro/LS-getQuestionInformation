@@ -338,10 +338,10 @@ class surveyAnswers
                 }
                 $oSubQuestions = Question::model()->findAll(
                     array(
-                        'condition' => "sid=:sid and parent_qid=:qid and language=:language",
+                        'condition' => "sid=:sid and parent_qid=:qid",
                         'select' => 'qid',
                         'order' => 'question_order asc',
-                        'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid, ":language" => $language),
+                        'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                     )
                 );
                 if ($oSubQuestions) {
