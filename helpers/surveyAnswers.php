@@ -273,7 +273,7 @@ class surveyAnswers
             case 'array-multi-flexi':
             case 'array-multi-flexi-text':
                 $oSubQuestionsY = Question::model()->findAll(array(
-                    'select' => 'title',
+                    'select' => 'qid,title',
                     'condition' => "sid=:sid and parent_qid=:qid and scale_id=0",
                     'order' => 'question_order asc',
                     'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
@@ -281,7 +281,7 @@ class surveyAnswers
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
-                            'select' => 'title',
+                            'select' => 'qid,title',
                             'condition' => "sid=:sid and parent_qid=:qid and scale_id=1",
                             'order' => 'question_order asc',
                             'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
@@ -304,7 +304,7 @@ class surveyAnswers
                 break;
             case 'multiple-short-txt':
                 $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
+                    'select' => 'qid,title',
                     'condition' => "sid=:sid and parent_qid=:qid",
                     'order' => 'question_order asc',
                     'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
@@ -378,8 +378,6 @@ class surveyAnswers
             );
             if ($oQuestion->type == "P") { /* Specific with comment … */
                 $aColumnsInfo['Q' . $oQuestion->qid . '_Cothercomment'] = array(
-                    'type' => "freetext",
-                );
                     'type' => "freetext",
                 );
             }
