@@ -2,11 +2,10 @@
 
 A collections of tools for opther plugin : have information about all questions in survey.
 
-This plugin is compatible with version 2.73 and 3.22 of LimeSurvey, can be test on any other 2.X and 3.X version.
+This plugin is compatible and chzcked with version 2.73, 3.22, 5.6, 6.17 and 7.0 of LimeSurvey, can be test on any other version.
 
-This plugin is not tested with LimeSurvey 4.X version.
-
-**This plugin is not compatible with LimeSurvey 7 version**
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU Affero General Public License for more details.
 
 ## Installation
 
@@ -37,6 +36,6 @@ Contribution are welcome, for patch and issue : use [gitlab]( https://gitlab.com
 
 ## Home page & Copyright
 - HomePage <http://extensions.sondages.pro/>
-- Copyright © 2018-2021 Denis Chenu <http://sondages.pro>
+- Copyright © 2018-2026 Denis Chenu <http://sondages.pro>
 - Licence : GNU Affero General Public License <https://www.gnu.org/licenses/agpl-3.0.html>
-- [![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/SondagesPro/) : [Donate on Liberapay](https://liberapay.com/SondagesPro/) 
+- [Donate](https://support.sondages.pro/open.php?topicId=12), [Liberapay](https://liberapay.com/SondagesPro/), [OpenCollective](https://opencollective.com/sondagespro)
