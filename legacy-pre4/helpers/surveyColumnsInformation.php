@@ -970,6 +970,10 @@ class surveyColumnsInformation
                 if ($bycategory && $separatorAttribute) {
                     $separator = trim($separatorAttribute->value);
                 }
+                if ($bycategory && $separatorAttribute) {
+                    $separator = trim($separatorAttribute->value);
+                }
+                $aAnswers = array();
                 if (!empty($answers)) {
                     if ($separator) {
                         $aAnswers = CHtml::listData(

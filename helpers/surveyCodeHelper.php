@@ -233,7 +233,11 @@ class surveyCodeHelper
         if ($oQuestion->type == 'P') {
             $aCommentColumns = array();
             foreach ($aColumnsToCode as $column => $code) {
-                $aCommentColumns[$column . "_Ccomment"] = $code . 'comment';
+                if ($column === 'Q' . $oQuestion->qid . '_Cother') {
+                    $aCommentColumns[$column . 'comment'] = $code . 'comment';
+                } else {
+                    $aCommentColumns[$column . '_Ccomment'] = $code . 'comment';
+                }
             }
             $aColumnsToCode = array_merge($aColumnsToCode, $aCommentColumns);
         }

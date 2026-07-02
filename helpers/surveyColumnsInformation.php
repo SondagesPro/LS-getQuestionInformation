@@ -592,10 +592,10 @@ class surveyColumnsInformation
             // Nothing to to do : throw error ?
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
-            $aColumnsInfo['Q_' . $oQuestion->qid . '_Cother'] = array_merge(
+            $aColumnsInfo['Q' . $oQuestion->qid . '_Cother'] = array_merge(
                 $aDefaultColumnInfo,
                 array(
-                    'name' => 'Q_' . $oQuestion->qid . '_Cother',
+                    'name' => 'Q' . $oQuestion->qid . '_Cother',
                     'header' => "<strong>[{$oQuestion->title}_other]</strong>" . self::getExtraHtmlHeader($oQuestionL10n) . CHTml::tag('small', array(), gT('Other')),
                 )
             );

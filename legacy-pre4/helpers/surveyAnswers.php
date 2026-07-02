@@ -424,7 +424,7 @@ class surveyAnswers
                     });
                 }
                 if (self::allowOther($oQuestion->type) && $oQuestion->other == "Y") {
-                    $aAnswers['-oth'] = gT('Other');
+                    $aAnswers['-oth-'] = gT('Other');
                 }
                 return $aAnswers;
                 break;
