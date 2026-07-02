@@ -23,47 +23,45 @@ class surveyCodeHelper
      */
     const apiversion = 1.2;
 
-    /* Set usage in static */
-    /* null|array[] */
+    /* Set usage in static : all system use DB call a lot, need static */
+    /* null|array[] getAllQuestions function result */
     private static $aAllQuestionsColumnsToCode = null;
-
-    /* null|array[] */
+    /* null|array[] getQuestionColumn specific static */
     private static $aQuestionsColumn = null;
 
     /**
     /* Get an array with DB column name key and EM code for value or columns information
      * @param integer $iSurvey
-     * @param string $unused
+     * @param null $unused
      * @param boolean $default column (id, submitdate … )
      * @return null|array
      */
-    public static function getAllQuestions($iSurvey, $unused = '', $default = false)
+    public static function getAllQuestions($iSurvey, $unused = null, $default = false)
     {
         if (self::$aAllQuestionsColumnsToCode == null) {
             self::$aAllQuestionsColumnsToCode = [];
         }
-        // First get all question
+        // Check survey
         $oSurvey = Survey::model()->findByPk($iSurvey);
         if (!$oSurvey) {
             return null;
         }
-        $language = $oSurvey->language;
         if (!isset(self::$aAllQuestionsColumnsToCode[$iSurvey])) {
             $questionTable = Question::model()->tableName();
             $command = Yii::app()->db->createCommand()
-                ->select("qid,{{questions}}.language as language,{{groups}}.group_order, {{questions}}.question_order")
+                ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
                 ->from($questionTable)
-                ->where("({{questions}}.sid = :sid AND {{questions}}.language = :language AND {{questions}}.parent_qid = 0)")
-                ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid  AND {{questions}}.language = {{groups}}.language")
+                ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
+                ->join('{{question_l10ns}}', "{{question_l10ns}}.qid = {{questions}}.qid")
+                ->join('{{groups}}', "{{groups}}.gid = {{questions}}.gid")
                 ->order("{{groups}}.group_order asc, {{questions}}.question_order asc")
-                ->bindParam(":sid", $iSurvey, PDO::PARAM_INT)
-                ->bindParam(":language", $language, PDO::PARAM_STR);
+                ->bindParam(":sid", $iSurvey, PDO::PARAM_INT);
             $allQuestions = $command->query()->readAll();
             $aQuestionsColumnsToCode = array();
             foreach ($allQuestions as $aQuestion) {
                 $aQuestionsColumnsToCode = array_merge(
                     $aQuestionsColumnsToCode,
-                    self::getQuestionColumn($aQuestion['qid'], $language)
+                    self::getQuestionColumn($aQuestion['qid'])
                 );
             }
             self::$aAllQuestionsColumnsToCode[$iSurvey] = $aQuestionsColumnsToCode;
@@ -80,17 +78,17 @@ class surveyCodeHelper
                 $aColumnsToCode['seed'] = 'seed';
             }
             if ($oSurvey->anonymized != "Y") {
-                $aHeader['token'] = gT("Token");
+                $aColumnsToCode['token'] = 'token';
             }
             if ($oSurvey->datestamp == "Y") {
-                $aHeader['startdate'] = gT("Date started");
-                $aHeader['datestamp'] = gT("Date last action");
+                $aColumnsToCode['startdate'] = 'startdate';
+                $aColumnsToCode['datestamp'] = 'datestamp';
             }
             if ($oSurvey->ipaddr == "Y") {
-                $aHeader['ipaddr'] = gT("IP address");
+                $aColumnsToCode['ipaddr'] = 'ipaddr';
             }
             if ($oSurvey->refurl == "Y") {
-                $aHeader['refurl'] = gT("Referrer URL");
+                $aColumnsToCode['refurl'] = 'refurl';
             }
         }
         $aColumnsToCode = array_merge(
@@ -103,20 +101,20 @@ class surveyCodeHelper
     /**
      * return array  with DB column name key and EM code for value for one question
      * @param integer $qid
-     * @param null $deprecated
      * @throw Exception if debug
      * @return array|null
      */
-    public static function getQuestionColumn($qid, $deprecated = null)
+    public static function getQuestionColumn($qid)
     {
+        /* static part */
         if (self::$aQuestionsColumn == null) {
             self::$aQuestionsColumn = [];
         }
         if (isset(self::$aQuestionsColumn[$qid])) {
             return self::$aQuestionsColumn[$qid];
         }
-        $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid)); // Get the first one, language not really needed
 
+        $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
         if (!$oQuestion) {
             if (Yii::app()->getConfig('debug') >= 2) {
                 throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -125,11 +123,10 @@ class surveyCodeHelper
         }
         if ($oQuestion->parent_qid) {
             if (Yii::app()->getConfig('debug') >= 2) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
-        $language = $oQuestion->language;
         $aColumnsToCode = array();
         switch (self::getTypeFromType($oQuestion->type)) {
             case 'single':
@@ -139,9 +136,9 @@ class surveyCodeHelper
             case 'dual':
                 $oSubQuestions = Question::model()->findAll(array(
                     'select' => 'title,question_order',
-                    'condition' => "sid=:sid and language=:language and parent_qid=:qid",
+                    'condition' => "sid=:sid and parent_qid=:qid",
                     'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid,":language" => $language,":qid" => $oQuestion->qid),
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -153,9 +150,9 @@ class surveyCodeHelper
             case 'sub':
                 $oSubQuestions = Question::model()->findAll(array(
                     'select' => 'title,question_order',
-                    'condition' => "sid=:sid and language=:language and parent_qid=:qid",
+                    'condition' => "sid=:sid and parent_qid=:qid",
                     'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid,":language" => $language,":qid" => $oQuestion->qid),
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
@@ -173,8 +170,8 @@ class surveyCodeHelper
                 }
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
-                        "qid=:qid and language=:language",
-                        array(":qid" => $oQuestion->qid,":language" => $oQuestion->language)
+                        "qid=:qid",
+                        array(":qid" => $oQuestion->qid)
                     ));
                 }
                 for ($count = 1; $count <= $maxAnswers; $count++) {
@@ -188,17 +185,17 @@ class surveyCodeHelper
             case 'double':
                 $oSubQuestionsY = Question::model()->findAll(array(
                     'select' => 'title,question_order',
-                    'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=0",
+                    'condition' => "sid=:sid and parent_qid=:qid and scale_id=0",
                     'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid,":language" => $language,":qid" => $oQuestion->qid),
+                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                 ));
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         $oSubQuestionsX = Question::model()->findAll(array(
                             'select' => 'title,question_order',
-                            'condition' => "sid=:sid and language=:language and parent_qid=:qid and scale_id=1",
+                            'condition' => "sid=:sid and parent_qid=:qid and scale_id=1",
                             'order' => 'question_order asc',
-                            'params' => array(":sid" => $oQuestion->sid,":language" => $language,":qid" => $oQuestion->qid),
+                            'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
                         ));
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
@@ -214,7 +211,7 @@ class surveyCodeHelper
             default:
                 // NUll
                 if (Yii::app()->getConfig('debug') >= 2) {
-                    throw new Exception(sprintf('Unknow question type %s.', $oQuestion->type));
+                    throw new \Exception(sprintf('Unknow question type %s.', $oQuestion->type));
                 }
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
@@ -296,7 +293,7 @@ class surveyCodeHelper
         $allowOther = array("L","!","P","M");
         return in_array($type, $allowOther);
     }
-
+    
     /**
      * Get the column name from expression manager code
      * Except for comment colum
@@ -315,13 +312,17 @@ class surveyCodeHelper
         $aCode = explode("_", $code);
         $oQuestion = Question::model()->find([
             'select' => ['sid', 'qid', 'title'],
-            'condition' => 'sid = :sid AND title = :title',
+            'condition' => 'sid = :sid AND title = :title AND parent_qid = 0',
             'params' => [':sid' => $surveyId, ':title' => $aCode[0]]
         ]);
         if (is_null($oQuestion)) {
             return null;
         }
-        $questionColumns = array_flip(self::getQuestionColumn($oQuestion->qid));
+        $columns = self::getQuestionColumn($oQuestion->qid);
+        if (!is_array($columns)) {
+            return null;
+        }
+        $questionColumns = array_flip($columns);
         if (isset($questionColumns[$code])) {
             return $questionColumns[$code];
         }

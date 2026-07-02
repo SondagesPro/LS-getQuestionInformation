@@ -128,7 +128,7 @@ class surveyAnswers
         $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
@@ -147,13 +147,13 @@ class surveyAnswers
         $oQuestion = Question::model()->find("qid=:qid AND language=:language", array(":qid" => $qid,":language" => $this->language));
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
             }
             return null;
         }
         if ($oQuestion->parent_qid) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
-                throw new Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
+                throw new \Exception('Invalid question iQid in getQuestionColumnToCode function. This function must be call only for parent question.');
             }
             return null;
         }
@@ -424,7 +424,7 @@ class surveyAnswers
                     });
                 }
                 if (self::allowOther($oQuestion->type) && $oQuestion->other == "Y") {
-                    $aAnswers['-oth'] = gT('Other');
+                    $aAnswers['-oth-'] = gT('Other');
                 }
                 return $aAnswers;
                 break;

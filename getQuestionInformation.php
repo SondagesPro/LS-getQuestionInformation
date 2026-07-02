@@ -3,9 +3,9 @@
  * Tool for others plugins
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2018-2023 Denis Chenu <http://www.sondages.pro>
+ * @copyright 2018-2026 Denis Chenu <http://www.sondages.pro>
  * @license GPL v3
- * @version 3.0;
+ * @version 4.0;
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE as published by
@@ -30,7 +30,12 @@ class getQuestionInformation extends PluginBase
             $this->subscribe('beforeToolsMenuRender');
         }
         if (intval(App()->getConfig('versionnumber')) < 4) {
-            Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy');
+            Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy-pre4');
+            App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
+            return;
+        }
+        if (intval(App()->getConfig('versionnumber')) < 7) {
+            Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy-pre7');
             App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
             return;
         }
