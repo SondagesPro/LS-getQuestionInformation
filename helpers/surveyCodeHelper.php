@@ -49,7 +49,7 @@ class surveyCodeHelper
         if (!isset(self::$aAllQuestionsColumnsToCode[$iSurvey])) {
             $questionTable = Question::model()->tableName();
             $command = Yii::app()->db->createCommand()
-                ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
+                ->selectDistinct("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
                 ->from($questionTable)
                 ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
                 ->join('{{question_l10ns}}', "{{question_l10ns}}.qid = {{questions}}.qid")
@@ -161,6 +161,10 @@ class surveyCodeHelper
                 }
                 break;
             case 'ranking':
+                if (self::isRankingJson()) {
+                    $aColumnsToCode['Q' . $oQuestion->qid] = $oQuestion->title;
+                    break;
+                }
                 $oQuestionAttribute = \QuestionAttribute::model()->find(
                     "qid = :qid AND attribute = 'max_subquestions'",
                     array(':qid' => $oQuestion->qid)
@@ -230,6 +234,9 @@ class surveyCodeHelper
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
             $aColumnsToCode['Q' . $oQuestion->qid . '_Cother'] = $oQuestion->title . "_other";
         }
+        if (self::hasOtherChecked($oQuestion)) {
+            $aColumnsToCode['Q' . $oQuestion->qid . '_Cotherchecked'] = $oQuestion->title . "_otherchecked";
+        }
         if ($oQuestion->type == 'P') {
             $aCommentColumns = array();
             foreach ($aColumnsToCode as $column => $code) {
@@ -242,7 +249,7 @@ class surveyCodeHelper
             $aColumnsToCode = array_merge($aColumnsToCode, $aCommentColumns);
         }
         if ($oQuestion->type == 'O') {
-            $aColumnsToCode['Q' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "comment";
+            $aColumnsToCode['Q' . $oQuestion->qid . '_Ccomment'] = $oQuestion->title . "_comment";
         }
         self::$aQuestionsColumn[$qid] = $aColumnsToCode;
         return $aColumnsToCode;
@@ -276,6 +283,7 @@ class surveyCodeHelper
             "Q" => 'sub',
             "R" => 'ranking',
             "S" => 'single',
+            "J" => 'single', // map (LimeSurvey 7.12)
             "T" => 'single',
             "U" => 'single',
             "Y" => 'single',
@@ -312,6 +320,30 @@ class surveyCodeHelper
     }
 
     /**
+     * Ranking is stored as a JSON list of subquestion codes in one column Q{qid} (DB version 709, LimeSurvey 7.0.6)
+     * Before : one column by rank Q{qid}_S{sqid}
+     * @return boolean
+     */
+    public static function isRankingJson()
+    {
+        return intval(App()->getConfig('dbversionnumber')) >= 709;
+    }
+
+    /**
+     * The Other option of a multiple choice question stores its tick in Q{qid}_Cotherchecked (LimeSurvey 7.10.0)
+     * @param \Question $oQuestion
+     * @return boolean
+     */
+    public static function hasOtherChecked($oQuestion)
+    {
+        if ($oQuestion->type != 'M' || $oQuestion->other != 'Y' || !method_exists('Survey', 'hasOtherCheckedColumn')) {
+            return false;
+        }
+        $oSurvey = Survey::model()->findByPk($oQuestion->sid);
+        return $oSurvey && $oSurvey->hasOtherCheckedColumn($oQuestion->qid);
+    }
+
+    /**
      * Get the column name from expression manager code
      * Except for comment colum
      * @param integer $surveyId
@@ -320,7 +352,12 @@ class surveyCodeHelper
      */
     public static function getColumnName($surveyId, $code)
     {
-        if (tableExists('survey_' . $surveyId)) {
+        $oSurvey = Survey::model()->findByPk($surveyId);
+        if (!$oSurvey) {
+            return null;
+        }
+        $hasResponsesTable = $oSurvey->getHasResponsesTable();
+        if ($hasResponsesTable) {
             $availableColumns = Response::model($surveyId)->getAttributes();
             if (array_key_exists($code, $availableColumns)) {
                 return $code;
@@ -329,17 +366,21 @@ class surveyCodeHelper
         $aCode = explode("_", $code);
         $oQuestion = Question::model()->find([
             'select' => ['sid', 'qid', 'title'],
-            'condition' => 'sid = :sid AND title = :title',
+            'condition' => 'sid = :sid AND title = :title AND parent_qid = 0',
             'params' => [':sid' => $surveyId, ':title' => $aCode[0]]
         ]);
         if (is_null($oQuestion)) {
             return null;
         }
-        $questionColumns = array_flip(self::getQuestionColumn($oQuestion->qid));
+        $columns = self::getQuestionColumn($oQuestion->qid);
+        if (!is_array($columns)) {
+            return null;
+        }
+        $questionColumns = array_flip($columns);
         if (isset($questionColumns[$code])) {
             return $questionColumns[$code];
         }
-        if (!tableExists('survey_' . $surveyId)) {
+        if (!$hasResponsesTable) {
             $allQuestionColumns = self::getAllQuestions($surveyId, null, true);
             /* core or real SGQA */
             if (isset($allQuestionColumns[$code])) {

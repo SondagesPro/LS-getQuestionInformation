@@ -162,6 +162,7 @@ class surveyAnswers
         switch ($questionClass) {
             /* Single text */
             case 'text-short':
+            case 'map':
             case 'equation':
             case 'text-long':
             case 'text-huge':
@@ -323,6 +324,13 @@ class surveyAnswers
                 );
                 break;
             case 'ranking':
+                if (surveyCodeHelper::isRankingJson()) {
+                    $aColumnsInfo['Q' . $oQuestion->qid] = array(
+                        'type' => 'ranking',
+                        'answers' => $this->getAnswers($oQuestion, $language),
+                    );
+                    break;
+                }
                 $oQuestionAttribute = \QuestionAttribute::model()->find(
                     "qid = :qid AND attribute = 'max_subquestions'",
                     array(':qid' => $oQuestion->qid)
@@ -349,7 +357,7 @@ class surveyAnswers
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = array(
                             'type' => 'answer',
-                            'filter' => $this->getAnswers($oQuestion, $language),
+                            'answers' => $this->getAnswers($oQuestion, $language),
                         );
                         if ($count >= $maxAnswers) {
                             break;
@@ -381,6 +389,12 @@ class surveyAnswers
                     'type' => "freetext",
                 );
             }
+        }
+        if (surveyCodeHelper::hasOtherChecked($oQuestion)) {
+            $aColumnsInfo['Q' . $oQuestion->qid . '_Cotherchecked'] = array(
+                'type' => 'checkbox',
+                'answers' => $this->getAnswers($oQuestion, $language),
+            );
         }
         return $aColumnsInfo;
     }
@@ -430,6 +444,7 @@ class surveyAnswers
                     'order' => 'sortorder, code',
                     'params' => array(":qid" => $oQuestion->qid,":scale" => $scale, ":language" => $language )
                 ));
+                $aAnswers = array();
                 if (!empty($answers)) {
                     $aAnswers = CHtml::listData($answers, 'code', function ($answer) use ($strip, $language) {
                         if (empty($answer->answerl10ns[$language])) {
@@ -444,7 +459,7 @@ class surveyAnswers
                 }
                 $aAnswers = array_filter($aAnswers, fn($answer) => $answer !== null); /* Remove invalid answers (no l10n) */
                 if (self::allowOther($oQuestion->type) && $oQuestion->other == "Y") {
-                    $aAnswers['-oth'] = gT('Other');
+                    $aAnswers['-oth-'] = gT('Other');
                 }
                 return $aAnswers;
                 break;
@@ -456,6 +471,7 @@ class surveyAnswers
                     'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid, ":language" => $language),
                     )
                 );
+                $aAnswers = array();
                 if (!empty($answers)) {
                     $aAnswers = CHtml::listData(
                         $answers,

@@ -12,7 +12,7 @@ Class Utilities
     /**
      * @var string current api version of this file
      */
-    const API = "3.2.0";
+    const API = "3.3.0";
 
     /**
      * @param integer $surveyId

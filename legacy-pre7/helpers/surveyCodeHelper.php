@@ -49,7 +49,7 @@ class surveyCodeHelper
         if (!isset(self::$aAllQuestionsColumnsToCode[$iSurvey])) {
             $questionTable = Question::model()->tableName();
             $command = Yii::app()->db->createCommand()
-                ->select("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
+                ->selectDistinct("{{questions}}.qid,{{groups}}.group_order, {{questions}}.question_order")
                 ->from($questionTable)
                 ->where("({{questions}}.sid = :sid AND {{questions}}.parent_qid = 0)")
                 ->join('{{question_l10ns}}', "{{question_l10ns}}.qid = {{questions}}.qid")

@@ -244,6 +244,7 @@ class surveyColumnsInformation
         switch ($questionClass) {
             /* Single text */
             case 'text-short':
+            case 'map':
             case 'equation':
             case 'text-long':
             case 'text-huge':
@@ -424,7 +425,7 @@ class surveyColumnsInformation
                             $aColumnsInfo['Q' . $oQuestion->qid .  '_S' . $oSubQuestion->qid . '_Ccomment'] = array_merge(
                                 $aDefaultColumnInfo,
                                 array(
-                                    'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . 'comment',
+                                    'name' => 'Q' . $oQuestion->qid .  '_S' . $oSubQuestion->qid . '_Ccomment',
                                     'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_{$oSubQuestion->title}_comment]") . CHTml::tag('small', array(), gT('Comment')) . self::getExtraHtmlHeader($oQuestionL10n, $oSubQuestionL10n),
                                 )
                             );
@@ -513,6 +514,19 @@ class surveyColumnsInformation
                 );
                 break;
             case 'ranking':
+                if (surveyCodeHelper::isRankingJson()) {
+                    $aColumnsInfo['Q' . $oQuestion->qid] = array_merge(
+                        $aDefaultColumnInfo,
+                        array(
+                            'name' => 'Q' . $oQuestion->qid,
+                            'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}]") . self::getExtraHtmlHeader($oQuestionL10n),
+                            'filter' => false,
+                            'type' => 'raw',
+                            'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getRankingValue($data,$this,' . $oQuestion->qid . ',"' . $oQuestionL10n->language . '")',
+                        )
+                    );
+                    break;
+                }
                 $oQuestionAttribute = \QuestionAttribute::model()->find(
                     "qid = :qid AND attribute = 'max_subquestions'",
                     array(':qid' => $oQuestion->qid)
@@ -522,8 +536,8 @@ class surveyColumnsInformation
                 }
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(
-                        Answer::model()->count(
-                            "qid=:qid",
+                        Question::model()->count(
+                            "parent_qid=:qid",
                             array(":qid" => $oQuestion->qid)
                         )
                     );
@@ -609,6 +623,17 @@ class surveyColumnsInformation
                 );
             }
         }
+        if (surveyCodeHelper::hasOtherChecked($oQuestion)) {
+            $aColumnsInfo['Q' . $oQuestion->qid . '_Cotherchecked'] = array_merge(
+                $aDefaultColumnInfo,
+                array(
+                    'name' => 'Q' . $oQuestion->qid . '_Cotherchecked',
+                    'header' => "<strong>[{$oQuestion->title}_otherchecked]</strong>" . self::getExtraHtmlHeader($oQuestionL10n) . CHTml::tag('small', array(), gT('Other (selected)')),
+                    'filter' => $this->getFilter($oQuestion, 0, true, $language),
+                    'value' => '\getQuestionInformation\helpers\surveyColumnsInformation::getCheckValue($data,$this,' . $oQuestion->qid . ')',
+                )
+            );
+        }
         return $aColumnsInfo;
     }
 
@@ -672,6 +697,7 @@ class surveyColumnsInformation
             case "L": // list-radio
             case "O": // list-with-comment
             case "S": // short-text
+            case "J": // map
             case "T": // long-text
             case "U": // huge-text
             case "Y": // yes-no
@@ -883,6 +909,22 @@ class surveyColumnsInformation
                 // Unselectable
                 break;
             case 'R': // Ranking
+                if (surveyCodeHelper::isRankingJson()) {
+                    $key = 'Q' . $oQuestion->qid;
+                    if ($ByEmCode) {
+                        $key = $oQuestion->title;
+                    }
+                    $aListData['data'][$key] = "[{$oQuestion->title}] " . viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 60, '…', 0.6);
+                    $aListData['options'][$key] = array_merge(
+                        $aDefaultOptions,
+                        array(
+                            'data-content' => viewHelper::purified($oQuestionL10n->question),
+                            'data-title' => $oQuestion->title,
+                            'title' => viewHelper::flatEllipsizeText($oQuestionL10n->question),
+                        )
+                    );
+                    break;
+                }
                 $oQuestionAttribute = \QuestionAttribute::model()->find(
                     "qid = :qid AND attribute = 'max_subquestions'",
                     array(':qid' => $oQuestion->qid)
@@ -989,6 +1031,21 @@ class surveyColumnsInformation
                 );
             }
         }
+        if (surveyCodeHelper::hasOtherChecked($oQuestion)) {
+            $key = 'Q' . $oQuestion->qid . '_Cotherchecked';
+            if ($ByEmCode) {
+                $key = $oQuestion->title . "_otherchecked";
+            }
+            $aListData['data'][$key] = "[{$oQuestion->title}_otherchecked] (" . viewHelper::flatEllipsizeText($oQuestionL10n->question, true, 30, '…', 0.7) . ") " . gT("Other (selected)");
+            $aListData['options'][$key] = array_merge(
+                $aDefaultOptions,
+                array(
+                    'data-content' => viewHelper::purified($oQuestionL10n->question) . "<hr>" . gT("Other (selected)"),
+                    'data-title' => $oQuestion->title . "_otherchecked",
+                    'title' => viewHelper::flatEllipsizeText($oQuestionL10n->question) . "\n" . gT("Other (selected)"),
+                )
+            );
+        }
         return $aListData;
     }
 
@@ -1076,6 +1133,7 @@ class surveyColumnsInformation
                 if ($bycategory && $separatorAttribute) {
                     $separator = trim($separatorAttribute->value);
                 }
+                $aAnswers = array();
                 if (!empty($answers)) {
                     if ($separator) {
                         $aAnswers = CHtml::listData(
@@ -1259,6 +1317,48 @@ class surveyColumnsInformation
         }
     }
 
+    /**
+     * Ranking stored as JSON list of subquestion codes ordered by rank
+     * @param mixed $data
+     * @param mixed $column
+     * @param integer $iQid
+     * @param string $language
+     * @return string
+     */
+    public static function getRankingValue($data, $column, $iQid, $language)
+    {
+        $value = self::getValue($data, $column);
+        if ($value === "") {
+            return "";
+        }
+        $rankedCodes = json_decode((string) $value, true);
+        if (!is_array($rankedCodes)) {
+            return CHtml::tag("div", array('class' => 'answer-value'), CHtml::encode($value));
+        }
+        /* @var array[] $aStaticAnswers to keep answers value get by DB during same page */
+        static $aStaticAnswers = [];
+        if (!isset($aStaticAnswers['q' . $iQid]['lang' . $language])) {
+            $oQuestion = Question::model()->find("qid =:qid", array(":qid" => $iQid));
+            $aStaticAnswers['q' . $iQid]['lang' . $language] = self::getFixedFilter($oQuestion, 0, false, $language, false);
+        }
+        $aAnswers = $aStaticAnswers['q' . $iQid]['lang' . $language];
+        $items = array();
+        foreach ($rankedCodes as $rankedCode) {
+            if (!is_scalar($rankedCode) || (string) $rankedCode === '') {
+                continue;
+            }
+            $item = CHtml::encode($rankedCode);
+            if (isset($aAnswers[$rankedCode])) {
+                $item = "<code>[" . $item . "]</code> " . viewHelper::purified($aAnswers[$rankedCode]);
+            }
+            $items[] = CHtml::tag("li", array(), $item);
+        }
+        if (empty($items)) {
+            return "";
+        }
+        return CHtml::tag("div", array('class' => 'answer-value'), CHtml::tag("ol", array(), implode($items)));
+    }
+
     public static function getUploadAnswerValue($data, $column, $iQid, $url)
     {
         $name = $column->name;
@@ -1431,12 +1531,13 @@ class surveyColumnsInformation
         switch ($questionClass) {
             /* Single text */
             case 'text-short':
+            case 'map':
             case 'text-long':
             case 'text-huge':
             case 'equation':
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'text';
+                $aColumnsInfo['Q' . $oQuestion->qid] = 'text';
                 if (self::getAttribute($qid, 'numbers_only')) {
-                    $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'number';
+                    $aColumnsInfo['Q' . $oQuestion->qid] = 'number';
                 }
                 break;
             case 'choice-5-pt-radio':
@@ -1446,9 +1547,9 @@ class surveyColumnsInformation
             case 'yes-no':
             case 'gender':
             case 'language':
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'choice';
+                $aColumnsInfo['Q' . $oQuestion->qid] = 'choice';
                 if ($oQuestion->type == "O") {
-                    $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "comment"] = 'text';
+                    $aColumnsInfo['Q' . $oQuestion->qid . '_Ccomment'] = 'text';
                 }
                 break;
             case 'array-5-pt':
@@ -1467,7 +1568,7 @@ class surveyColumnsInformation
                 );
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = 'choice';
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = 'choice';
                     }
                 }
                 break;
@@ -1483,13 +1584,13 @@ class surveyColumnsInformation
                 );
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0"] = 'choice';
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#1"] = 'choice';
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . "#0"] = 'choice';
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . "#1"] = 'choice';
                     }
                 }
                 break;
             case 'numeric':
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'decimal';
+                $aColumnsInfo['Q' . $oQuestion->qid] = 'decimal';
                 break;
             case 'numeric-multi':
                 $oSubQuestions = Question::model()->findAll(
@@ -1502,7 +1603,7 @@ class surveyColumnsInformation
                 );
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = 'decimal';
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = 'decimal';
                     }
                 }
                 break;
@@ -1518,9 +1619,9 @@ class surveyColumnsInformation
                 );
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = 'boolean';
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = 'boolean';
                         if ($questionClass == 'multiple-opt-comments') {
-                            $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . 'comment'] = 'text';
+                            $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid . '_Ccomment'] = 'text';
                         }
                     }
                 }
@@ -1547,12 +1648,12 @@ class surveyColumnsInformation
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
-                                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = 'text';
+                                $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestionY->qid . '_S' . $oSubQuestionX->qid] = 'text';
                                 if ($questionClass == 'array-multi-flexi') {
-                                    $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = 'float';
+                                    $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestionY->qid . '_S' . $oSubQuestionX->qid] = 'float';
                                 }
                                 if (self::getAttribute($qid, 'numbers_only')) {
-                                    $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestionY->title . "_" . $oSubQuestionX->title] = 'number';
+                                    $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestionY->qid . '_S' . $oSubQuestionX->qid] = 'number';
                                 }
                             }
                         }
@@ -1574,36 +1675,26 @@ class surveyColumnsInformation
                 }
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = $type;
+                        $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = $type;
                     }
                 }
                 break;
             case 'date':
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'date';
+                $aColumnsInfo['Q' . $oQuestion->qid] = 'date';
                 break;
             case 'ranking':
-                $oQuestionAttribute = \QuestionAttribute::model()->find(
-                    "qid = :qid AND attribute = 'max_subquestions'",
-                    array(':qid' => $oQuestion->qid)
-                );
-                if ($oQuestionAttribute) {
-                    $maxAnswers = intval($oQuestionAttribute->value);
+                if (surveyCodeHelper::isRankingJson()) {
+                    $aColumnsInfo['Q' . $oQuestion->qid] = 'ranking';
+                    break;
                 }
-                if (empty($maxAnswers)) {
-                    $maxAnswers = intval(
-                        Answer::model()->count(
-                            "qid=:qid",
-                            array(":qid" => $oQuestion->qid)
-                        )
-                    );
-                }
-                for ($count = 1; $count <= $maxAnswers; $count++) {
-                    $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count] = 'choice';
+                /* One column by rank : same columns than surveyCodeHelper */
+                foreach (array_keys(surveyCodeHelper::getQuestionColumn($oQuestion->qid)) as $column) {
+                    $aColumnsInfo[$column] = 'choice';
                 }
                 break;
             case 'upload-files':
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = 'upload';
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "_filecount"] = 'integer';
+                $aColumnsInfo['Q' . $oQuestion->qid] = 'upload';
+                $aColumnsInfo['Q' . $oQuestion->qid . '_Cfilecount'] = 'integer';
                 break;
             case 'boilerplate':
                 /* Don't show it*/
@@ -1615,10 +1706,13 @@ class surveyColumnsInformation
             /* Nothing to do */
         }
         if (self::allowOther($oQuestion->type) and $oQuestion->other == "Y") {
-            $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "other"] = 'text';
+            $aColumnsInfo['Q' . $oQuestion->qid . '_Cother'] = 'text';
             if ($oQuestion->type == "P") { /* Specific with comment … */
-                $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "othercomment"] = 'text';
+                $aColumnsInfo['Q' . $oQuestion->qid . '_Cothercomment'] = 'text';
             }
+        }
+        if (surveyCodeHelper::hasOtherChecked($oQuestion)) {
+            $aColumnsInfo['Q' . $oQuestion->qid . '_Cotherchecked'] = 'boolean';
         }
         return $aColumnsInfo;
     }
