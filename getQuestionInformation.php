@@ -29,11 +29,6 @@ class getQuestionInformation extends PluginBase
         if ($this->isToolEnabled()) {
             $this->subscribe('beforeToolsMenuRender');
         }
-        if (intval(App()->getConfig('versionnumber')) < 4) {
-            Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy-pre4');
-            App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
-            return;
-        }
         if (intval(App()->getConfig('versionnumber')) < 7) {
             Yii::setPathOfAlias(get_class($this), dirname(__FILE__) . DIRECTORY_SEPARATOR . 'legacy-pre7');
             App()->setConfig('getQuestionInformationAPI', \getQuestionInformation\Utilities::API);
@@ -101,11 +96,7 @@ class getQuestionInformation extends PluginBase
                     )
                 ),
             );
-            if (class_exists("\LimeSurvey\Menu\MenuItem")) {
-                $menuItem = new \LimeSurvey\Menu\MenuItem($aMenuItem);
-            } else {
-                $menuItem = new \ls\menu\MenuItem($aMenuItem);
-            }
+            $menuItem = new \LimeSurvey\Menu\MenuItem($aMenuItem);
             $event->append('menuItems', array($menuItem));
         }
     }

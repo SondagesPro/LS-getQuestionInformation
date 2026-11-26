@@ -2,7 +2,7 @@
 
 A collections of tools for opther plugin : have information about all questions in survey.
 
-This plugin is compatible and chzcked with version 2.73, 3.22, 5.6, 6.17 and 7.0 of LimeSurvey, can be test on any other version.
+This plugin is compatible and checked with version 5.6, 6.17 and 7.12 of LimeSurvey, can be test on any other version.
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU Affero General Public License for more details.
