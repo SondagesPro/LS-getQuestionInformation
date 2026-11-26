@@ -510,7 +510,7 @@ class surveyColumnsInformation
                     $aDefaultColumnInfo,
                     array(
                         'name' => $oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . "_filecount",
-                        'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}]") . CHTml::tag('small', array(), gT("File count")),
+                        'header' => CHTml::tag('strong', array(), "[{$oQuestion->title}_filecount]") . CHTml::tag('small', array(), gT("File count")),
                     )
                 );
                 break;
@@ -1097,9 +1097,11 @@ class surveyColumnsInformation
         $index = 0;
         foreach ($filesData as $fileData) {
             if (isset($fileData['name'])) {
-                $element = CHtml::encode(urldecode($fileData['name']));
+                $element = CHtml::encode(rawurldecode($fileData['name']));
                 if ($url) {
                     $params = array_merge($url['params'], array('sid' => $oQuestion->sid, 'srid' => $data->id, 'qid' => $oQuestion->qid, 'fileindex' => $index));
+                    /* Link open a new window : say it to assistive technologies (sr-only : Bootstrap 3, visually-hidden : Bootstrap 5) */
+                    $element .= CHtml::tag("span", array("class" => "visually-hidden sr-only"),  " " . CHtml::encode(gT("(Opens in a new window)")));
                     $element = CHtml::link($element, Yii::app()->getController()->createUrl($url['route'], $params), array('target' => '_blank'));
                 }
                 $subElements = "";
