@@ -12,8 +12,6 @@ use Yii;
 use PDO;
 use Survey;
 use Question;
-use QuestionAttribute;
-use Answer;
 use Response;
 
 class surveyCodeHelper
@@ -131,7 +129,6 @@ class surveyCodeHelper
         switch (self::getTypeFromType($oQuestion->type)) {
             case 'single':
                 $aColumnsToCode['Q' . $oQuestion->qid] = $oQuestion->title;
-                $aCurrent['Q' . $oQuestion->qid] = $oQuestion->title;
                 break;
             case 'dual':
                 $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);

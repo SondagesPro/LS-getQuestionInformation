@@ -22,7 +22,6 @@
 namespace getQuestionInformation\helpers;
 
 use Yii;
-use PDO;
 use Exception;
 use Survey;
 use CHtml;
@@ -30,7 +29,6 @@ use CDbCriteria;
 use Question;
 use QuestionL10n;
 use Answer;
-use AnswerL10n;
 
 /* @Todo : replace by non static function */
 class surveyColumnsInformation
@@ -485,9 +483,6 @@ class surveyColumnsInformation
                 if ($oSubQuestions) {
                     $count = 1;
                     foreach ($oSubQuestions as $oSubQuestion) {
-                        $header = "<strong>[{$oQuestion->title}_{$count}]</strong>"
-                            . self::getExtraHtmlHeader($oQuestionL10n)
-                            . "<small>" . sprintf(gT("Rank %s"), $count) . "</small>";
                         $aColumnsInfo['Q' . $oQuestion->qid . '_S' . $oSubQuestion->qid] = array_merge(
                             $aDefaultColumnInfo,
                             array(
@@ -943,7 +938,7 @@ class surveyColumnsInformation
         if ($questionClass == "date") {
             return $this->getDateFilter('Q' . $oQuestion->qid, $oQuestion->qid);
         }
-        return self::getFixedFilter($oQuestion, $scale, $strip, $language);
+        return self::getFixedFilter($oQuestion, $scale, $strip, $language, $bycategory);
     }
 
     /**
@@ -1225,13 +1220,6 @@ class surveyColumnsInformation
         if ($oQuestion->type != "|") {
             return;
         }
-        $aQuestionAttributes = \QuestionAttribute::model()->getQuestionAttributes($iQid);
-        $elementTag = 'li';
-        $listTag = 'ul';
-        if (empty($aQuestionAttributes['show_title']) && empty($aQuestionAttributes['show_comment'])) {
-            $elementTag = 'li';
-            $listTag = 'ul';
-        }
         $url = @json_decode(base64_decode($url), 1);
         $htmlList = array();
         $index = 0;
@@ -1242,24 +1230,22 @@ class surveyColumnsInformation
                     $params = array_merge($url['params'], array('sid' => $oQuestion->sid, 'srid' => $data->id, 'qid' => $oQuestion->qid, 'fileindex' => $index));
                     $element = CHtml::link($element, Yii::app()->getController()->createUrl($url['route'], $params), array('target' => '_blank'));
                 }
-                $htmlElement = CHtml::tag($elementTag, array(), $element);
                 $subElements = "";
                 if (!empty($fileData['title'])) {
                     $subElements .= CHtml::tag("li", array(), CHtml::encode($fileData['title']));
                 }
                 if (!empty($fileData['comment'])) {
-                    $comment = !empty($fileData['comment']) ? $fileData['comment'] : '-';
                     $subElements .= CHtml::tag("li", array(), CHtml::encode($fileData['comment']));
                 }
                 if (!empty($subElements)) {
-                    $htmlElement .= "<ul>" . $subElements . "</ul>";
+                    /* Title and comment of the file inside its list item */
+                    $element .= CHtml::tag("ul", array(), $subElements);
                 }
-                $htmlList[] = $htmlElement;
+                $htmlList[] = CHtml::tag("li", array(), $element);
             }
             $index++;
         }
-        return CHtml::tag("div", array('class' => 'answer-value', 'title' => gT("Files")), CHtml::tag($listTag, array('class' => 'file-list list-unstyled'), implode($htmlList)));
-        //return CHtml::tag("div",array('class'=>'answer-value','title'=>gT("Files")),CHtml::tag($listTag,array('class'=>'file-list'),implode($htmlList)));
+        return CHtml::tag("div", array('class' => 'answer-value', 'title' => gT("Files")), CHtml::tag("ul", array('class' => 'file-list list-unstyled'), implode($htmlList)));
     }
     public static function getDateValue($data, $column, $iQid, $surveyid)
     {
@@ -1376,7 +1362,6 @@ class surveyColumnsInformation
             return null;
         }
         $aColumnsInfo = array();
-        $aColumnsType = array();
         $questionClass = Question::getQuestionClass($oQuestion->type);
         /* Get is forced number */
 

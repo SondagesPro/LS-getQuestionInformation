@@ -130,7 +130,6 @@ class surveyCodeHelper
         switch (self::getTypeFromType($oQuestion->type)) {
             case 'single':
                 $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = $oQuestion->title;
-                $aCurrent[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid] = $oQuestion->title;
                 break;
             case 'dual':
                 $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);

@@ -509,14 +509,4 @@ class surveyAnswers
         return $aFilterLanguages;
     }
 
-    /**
-     * get value of an attribute
-     * @param integer $qid
-     * @param $name
-     * return null|string
-     */
-    private static function getAttribute($qid, $name)
-    {
-        return surveyQuestions::getAttribute($qid, $name);
-    }
 }

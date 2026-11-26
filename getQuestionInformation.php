@@ -26,7 +26,7 @@ class getQuestionInformation extends PluginBase
 
     public function init()
     {
-        if (App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink')) {
+        if ($this->isToolEnabled()) {
             $this->subscribe('beforeToolsMenuRender');
         }
         if (intval(App()->getConfig('versionnumber')) < 4) {
@@ -51,6 +51,16 @@ class getQuestionInformation extends PluginBase
      */
     public function actionSettings($surveyId)
     {
+        if (!$this->isToolEnabled()) {
+            throw new CHttpException(403);
+        }
+        $surveyId = intval($surveyId);
+        if (!Survey::model()->findByPk($surveyId)) {
+            throw new CHttpException(404, gT("Invalid survey ID"));
+        }
+        if (!Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
+            throw new CHttpException(403);
+        }
         $columToCode = \getQuestionInformation\helpers\surveyCodeHelper::getAllQuestions($surveyId);
         $allQuestionsColumns = \getQuestionInformation\helpers\surveyColumnsInformation::getAllQuestionsColumns($surveyId, null, true);
         $allQuestionAnswers = \getQuestionInformation\helpers\surveyAnswers::getAllQuestionsAnswers($surveyId, null);
@@ -77,7 +87,6 @@ class getQuestionInformation extends PluginBase
         }
         $event = $this->getEvent();
         $surveyId = $event->get('surveyId');
-        $oSurvey = Survey::model()->findByPk($surveyId);
         if (Permission::model()->hasSurveyPermission($surveyId, 'surveycontent', 'read')) {
             $aMenuItem = array(
                 'label' => 'Check question information',
@@ -99,6 +108,15 @@ class getQuestionInformation extends PluginBase
             }
             $event->append('menuItems', array($menuItem));
         }
+    }
+
+    /**
+     * The test tool is shown and usable only in debug mode or with getQuestionInformationShowToolLink config
+     * @return boolean
+     */
+    private function isToolEnabled()
+    {
+        return App()->getConfig('debug') || App()->getConfig('getQuestionInformationShowToolLink');
     }
 
 }
