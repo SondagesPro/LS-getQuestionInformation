@@ -2,6 +2,7 @@
 .gitlab-ci.yml export-ignore
 README.md export-ignore
 SECURITY.md export-ignore
+devtools export-ignore
 
 # Set default behaviour, in case users don't have core.autocrlf set.
 * text=auto
