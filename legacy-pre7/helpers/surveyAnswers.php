@@ -25,10 +25,8 @@ use Yii;
 use PDO;
 use Exception;
 use Survey;
-use viewHelper;
 use CHtml;
 use Question;
-use QuestionAttribute;
 use Answer;
 
 class surveyAnswers
@@ -124,7 +122,7 @@ class surveyAnswers
      */
     public static function getQuestionAnswers($qid, $language = null)
     {
-        $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
+        $oQuestion = surveyQuestions::getQuestion($qid);
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
                 throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -143,7 +141,7 @@ class surveyAnswers
      */
     public function questionAnswers($qid)
     {
-        $oQuestion = Question::model()->find("qid=:qid", array(":qid" => $qid));
+        $oQuestion = surveyQuestions::getQuestion($qid);
         if (!$oQuestion) {
             if (defined('YII_DEBUG') && YII_DEBUG) {
                 throw new \Exception('Invalid question iQid in getQuestionColumnToCode function.');
@@ -192,12 +190,7 @@ class surveyAnswers
             case 'array-increase-same-decrease':
             case 'array-flexible-row':
             case 'array-flexible-column':
-                $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid,":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array(
@@ -209,12 +202,7 @@ class surveyAnswers
                 break;
             case 'array-flexible-duel-scale':
             case 'array-flexible-dual-scale':
-                $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid,":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title . "#0"] = array(
@@ -234,12 +222,7 @@ class surveyAnswers
                 );
                 break;
             case 'numeric-multi':
-                $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array(
@@ -250,12 +233,7 @@ class surveyAnswers
                 break;
             case 'multiple-opt':
             case 'multiple-opt-comments':
-                $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array(
@@ -272,20 +250,10 @@ class surveyAnswers
                 break;
             case 'array-multi-flexi':
             case 'array-multi-flexi-text':
-                $oSubQuestionsY = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid and scale_id=0",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestionsY = surveyQuestions::getSubQuestions($oQuestion->qid, 0);
                 if ($oSubQuestionsY) {
                     foreach ($oSubQuestionsY as $oSubQuestionY) {
-                        $oSubQuestionsX = Question::model()->findAll(array(
-                            'select' => 'title',
-                            'condition' => "sid=:sid and parent_qid=:qid and scale_id=1",
-                            'order' => 'question_order asc',
-                            'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
-                        ));
+                        $oSubQuestionsX = surveyQuestions::getSubQuestions($oQuestion->qid, 1);
                         if ($oSubQuestionsX) {
                             foreach ($oSubQuestionsX as $oSubQuestionX) {
                                 if ($questionClass == 'array-multi-flexi-text') {
@@ -303,12 +271,7 @@ class surveyAnswers
                 }
                 break;
             case 'multiple-short-txt':
-                $oSubQuestions = Question::model()->findAll(array(
-                    'select' => 'title',
-                    'condition' => "sid=:sid and parent_qid=:qid",
-                    'order' => 'question_order asc',
-                    'params' => array(":sid" => $oQuestion->sid, ":qid" => $oQuestion->qid),
-                ));
+                $oSubQuestions = surveyQuestions::getSubQuestions($oQuestion->qid);
                 if ($oSubQuestions) {
                     foreach ($oSubQuestions as $oSubQuestion) {
                         $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $oSubQuestion->title] = array(
@@ -323,13 +286,7 @@ class surveyAnswers
                 );
                 break;
             case 'ranking':
-                $oQuestionAttribute = \QuestionAttribute::model()->find(
-                    "qid = :qid AND attribute = 'max_subquestions'",
-                    array(':qid' => $oQuestion->qid)
-                );
-                if ($oQuestionAttribute) {
-                    $maxAnswers = intval($oQuestionAttribute->value);
-                }
+                $maxAnswers = intval(surveyQuestions::getAttribute($oQuestion->qid, 'max_subquestions'));
                 if (empty($maxAnswers)) {
                     $maxAnswers = intval(Answer::model()->count(
                         "qid=:qid",
@@ -339,7 +296,7 @@ class surveyAnswers
                 for ($count = 1; $count <= $maxAnswers; $count++) {
                     $aColumnsInfo[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count] = array(
                         'type' => 'answer',
-                        'filter' => $this->getAnswers($oQuestion, $language),
+                        'answers' => $this->getAnswers($oQuestion, $language),
                     );
                     $aColumnsToCode[$oQuestion->sid . "X" . $oQuestion->gid . 'X' . $oQuestion->qid . $count] = $oQuestion->title . "_" . $count;
                 }
@@ -391,6 +348,25 @@ class surveyAnswers
      */
     public static function getAnswers($oQuestion, $language = null, $scale = 0, $strip = true)
     {
+        /* @var array[] answers by question, language, scale and strip : same answers for each subquestion */
+        static $aAnswersCache = [];
+        $key = $oQuestion->qid . "|" . (empty($language) ? App()->getLanguage() : $language) . "|" . $scale . "|" . intval($strip);
+        if (!array_key_exists($key, $aAnswersCache)) {
+            $aAnswersCache[$key] = self::findAnswers($oQuestion, $language, $scale, $strip);
+        }
+        return $aAnswersCache[$key];
+    }
+
+    /**
+     * @see self::getAnswers
+     * @param \Question
+     * @param string $language
+     * @param integer $scale
+     * @param boolean $strip
+     * return array|false|null
+     */
+    private static function findAnswers($oQuestion, $language, $scale, $strip)
+    {
         Yii::import('application.helpers.viewHelper');
         $oSurvey = Survey::model()->findByPk($oQuestion->sid);
         if (!$oSurvey) {
@@ -425,9 +401,9 @@ class surveyAnswers
                         }
                         $answertext = $answer->answerl10ns[$language]->answer;
                         if ($strip) {
-                            return strip_tags(viewHelper::purified($answertext));
+                            return textHelper::flatten($answertext);
                         }
-                        return viewHelper::purified($answertext);
+                        return textHelper::purified($answertext);
                     });
                 }
                 $aAnswers = array_filter($aAnswers, static function ($answer) {
@@ -491,22 +467,4 @@ class surveyAnswers
         return $aFilterLanguages;
     }
 
-    /**
-     * get value of an attribute
-     * @param integer $qid
-     * @param $name
-     * return null|string
-     */
-    private static function getAttribute($qid, $name)
-    {
-        $AttributeCriteria = new \CDbCriteria();
-        $AttributeCriteria->select = 'value';
-        $AttributeCriteria->compare('qid', $qid);
-        $AttributeCriteria->compare('attribute', $name);
-        $oAttribute = QuestionAttribute::model()->find($AttributeCriteria);
-        if (empty($oAttribute)) {
-            return null;
-        }
-        return $oAttribute->value;
-    }
 }
