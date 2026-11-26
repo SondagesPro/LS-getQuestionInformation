@@ -3,3 +3,4 @@
 !.gitignore
 !.gitattributes
 !.gitlab-ci.yml
+!.coderabbit.yaml

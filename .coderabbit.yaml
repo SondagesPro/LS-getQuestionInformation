@@ -1,0 +1,5 @@
+# CodeRabbit configuration
+reviews:
+  path_filters:
+    # Developer tools, not part of the plugin (see devtools/README.md)
+    - "!devtools/**"
